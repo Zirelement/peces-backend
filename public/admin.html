@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel de Administración</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f8f9fa; }
+    .card-img-top { height: 200px; object-fit: contain; }
+    .btn-custom {
+      transition: all 0.3s ease-in-out;
+      border-radius: 8px;
+    }
+    .btn-custom:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
+    .btn-primary { background-color: #198754; border-color: #198754; }
+    .btn-primary:hover { background-color: #146c43; }
+    .btn-danger:hover { background-color: #bb2d3b; }
+    .btn-warning:hover { background-color: #ffca2c; }
+    .top-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    #btn-agregar { display: block; margin: 0 auto 30px; }
+  </style>
+</head>
+<body class="bg-light">
+
+  <div class="container mt-4">
+    <!-- Botones superiores -->
+    <div class="top-buttons">
+      <a href="peces.html" class="btn btn-outline-primary btn-custom">← Regresar a galería</a>
+      <a href="login.html" class="btn btn-outline-danger btn-custom">Salir</a>
+    </div>
+
+    <h1 class="text-center text-success mb-2">Panel de Administración 🛠️</h1>
+
+    <!-- Botón que abre modal de agregar -->
+    <button id="btn-agregar" class="btn btn-success btn-custom" data-bs-toggle="modal" data-bs-target="#modalAgregarPez">
+      + Agregar nuevo pez
+    </button>
+
+    <!-- Modal Agregar pez -->
+    <div class="modal fade" id="modalAgregarPez" tabindex="-1" aria-labelledby="modalAgregarLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <form id="agregar-pez-form" enctype="multipart/form-data">
+            <div class="modal-header">
+              <h5 class="modal-title text-success" id="modalAgregarLabel">Agregar nuevo pez</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3"><label class="form-label">Nombre común</label><input type="text" class="form-control" name="nombre_comun" required></div>
+              <div class="mb-3"><label class="form-label">Nombre científico</label><input type="text" class="form-control" name="nombre_cientifico" required></div>
+              <div class="mb-3"><label class="form-label">Familia</label><input type="text" class="form-control" name="familia" required></div>
+              <div class="mb-3"><label class="form-label">Alimentación</label><input type="text" class="form-control" name="alimentacion" required></div>
+              <div class="mb-3"><label class="form-label">Estado de conservación</label><input type="text" class="form-control" name="estado_conservacion" required></div>
+              <div class="mb-3"><label class="form-label">Imagen</label><input type="file" class="form-control" name="imagen" accept="image/*" required></div>
+              <p id="agregar-msg" class="mt-2 text-success"></p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary btn-custom" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-primary btn-custom">Agregar Pez</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Editar pez -->
+    <div class="modal fade" id="modalEditarPez" tabindex="-1" aria-labelledby="modalEditarLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <form id="editar-pez-form">
+            <div class="modal-header">
+              <h5 class="modal-title text-warning" id="modalEditarLabel">Editar pez</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="editar-id" name="id">
+              <div class="mb-3"><label class="form-label">Nombre común</label><input type="text" id="editar-nombre_comun" class="form-control" name="nombre_comun" required></div>
+              <div class="mb-3"><label class="form-label">Nombre científico</label><input type="text" id="editar-nombre_cientifico" class="form-control" name="nombre_cientifico" required></div>
+              <div class="mb-3"><label class="form-label">Familia</label><input type="text" id="editar-familia" class="form-control" name="familia" required></div>
+              <div class="mb-3"><label class="form-label">Alimentación</label><input type="text" id="editar-alimentacion" class="form-control" name="alimentacion" required></div>
+              <div class="mb-3"><label class="form-label">Estado de conservación</label><input type="text" id="editar-estado_conservacion" class="form-control" name="estado_conservacion" required></div>
+              <p id="editar-msg" class="mt-2 text-success"></p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary btn-custom" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-warning btn-custom">Guardar cambios</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Eliminar pez -->
+    <div class="modal fade" id="modalEliminarPez" tabindex="-1" aria-labelledby="modalEliminarLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title text-danger" id="modalEliminarLabel">Eliminar pez</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p>¿Estás seguro de eliminar <strong id="eliminar-nombre"></strong>?</p>
+            <input type="hidden" id="eliminar-id">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-custom" data-bs-dismiss="modal">Cancelar</button>
+            <button id="confirmar-eliminar" type="button" class="btn btn-danger btn-custom">Eliminar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Listado de peces -->
+    <h3 class="text-success">Especies actuales</h3>
+    <div class="row" id="admin-contenedor-peces"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Carga inicial de especies
+    async function cargarPeces() {
+      const cont = document.getElementById("admin-contenedor-peces");
+      cont.innerHTML = "";
+      try {
+        const res = await fetch("http://localhost:3000/especies");
+        const peces = await res.json();
+        peces.forEach(p => {
+          cont.innerHTML += `
+            <div class="col-md-4 mb-4">
+              <div class="card h-100">
+                <img src="${p.imagen_url.startsWith('http') ? p.imagen_url : 'http://localhost:3000/images/'+p.imagen_url}"
+                     class="card-img-top" alt="${p.nombre_comun}">
+                <div class="card-body">
+                  <h5 class="card-title">${p.nombre_comun}</h5>
+                  <p class="card-text">
+                    <strong>Científico:</strong> ${p.nombre_cientifico}<br>
+                    <strong>Familia:</strong> ${p.familia}<br>
+                    <strong>Alimentación:</strong> ${p.alimentacion}<br>
+                    <strong>Conservación:</strong> ${p.estado_conservacion}
+                  </p>
+                  <button class="btn btn-sm btn-warning btn-custom me-2"
+                          onclick='abrirEditar(${JSON.stringify(p)})'>Editar</button>
+                  <button class="btn btn-sm btn-danger btn-custom"
+                          onclick="abrirEliminar('${p._id}','${p.nombre_comun}')">Eliminar</button>
+                </div>
+              </div>
+            </div>`;
+        });
+      } catch {
+        cont.innerHTML = `<p class="text-danger">Error al cargar las especies.</p>`;
+      }
+    }
+
+    // AGREGAR
+    document.getElementById("agregar-pez-form").addEventListener("submit", async e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const res = await fetch("http://localhost:3000/especies-con-imagen", {
+        method: "POST", body: fd
+      });
+      if (res.ok) {
+        document.getElementById("agregar-msg").textContent = "✅ Pez agregado.";
+        e.target.reset();
+        cargarPeces();
+        bootstrap.Modal.getInstance(document.getElementById("modalAgregarPez")).hide();
+      } else {
+        const err = await res.json();
+        document.getElementById("agregar-msg").textContent = "❌ " + err.message;
+      }
+    });
+
+    // EDITAR
+    function abrirEditar(p) {
+      document.getElementById("editar-id").value = p._id;
+      document.getElementById("editar-nombre_comun").value = p.nombre_comun;
+      document.getElementById("editar-nombre_cientifico").value = p.nombre_cientifico;
+      document.getElementById("editar-familia").value = p.familia;
+      document.getElementById("editar-alimentacion").value = p.alimentacion;
+      document.getElementById("editar-estado_conservacion").value = p.estado_conservacion;
+      bootstrap.Modal.getOrCreateInstance(document.getElementById("modalEditarPez")).show();
+    }
+
+    document.getElementById("editar-pez-form").addEventListener("submit", async e => {
+      e.preventDefault();
+      const id = document.getElementById("editar-id").value;
+      const body = {
+        nombre_comun: document.getElementById("editar-nombre_comun").value,
+        nombre_cientifico: document.getElementById("editar-nombre_cientifico").value,
+        familia: document.getElementById("editar-familia").value,
+        alimentacion: document.getElementById("editar-alimentacion").value,
+        estado_conservacion: document.getElementById("editar-estado_conservacion").value
+      };
+      const res = await fetch(`http://localhost:3000/especies/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        document.getElementById("editar-msg").textContent = "✅ Actualizado.";
+        cargarPeces();
+        bootstrap.Modal.getInstance(document.getElementById("modalEditarPez")).hide();
+      } else {
+        const err = await res.json();
+        document.getElementById("editar-msg").textContent = "❌ " + err.message;
+      }
+    });
+
+    // ELIMINAR
+    function abrirEliminar(id, nombre) {
+      document.getElementById("eliminar-id").value = id;
+      document.getElementById("eliminar-nombre").textContent = nombre;
+      bootstrap.Modal.getOrCreateInstance(document.getElementById("modalEliminarPez")).show();
+    }
+    document.getElementById("confirmar-eliminar").addEventListener("click", async () => {
+      const id = document.getElementById("eliminar-id").value;
+      const res = await fetch(`http://localhost:3000/especies/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        bootstrap.Modal.getInstance(document.getElementById("modalEliminarPez")).hide();
+        cargarPeces();
+      } else alert("❌ Error al eliminar.");
+    });
+
+    window.onload = cargarPeces;
+  </script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Peces del Río Peruano</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .card:hover {
+      transform: scale(1.03);
+      transition: all 0.3s ease-in-out;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+    .card-img-top {
+      height: 220px;
+      object-fit: contain;
+    }
+    .navbar-brand {
+      font-weight: bold;
+    }
+    .carousel img {
+      max-height: 450px;
+      object-fit: cover;
+    }
+    body {
+      scroll-behavior: smooth;
+    }
+  </style>
+</head>
+<body class="bg-light">
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-success sticky-top shadow">
+    <div class="container">
+      <a class="navbar-brand" href="#">🐟 PecesPeruanos</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navBarContent">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navBarContent">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link active" href="#galeria">Galería</a></li>
+          <li class="nav-item"><a class="nav-link" href="#contacto">Contacto</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">Login</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ENCABEZADO -->
+  <div class="container text-center mt-5">
+    <h1 class="text-success mb-4">🐟 Peces del Río Peruano 🐟</h1>
+    <p class="lead">Descubre la riqueza acuática de los ríos de nuestra Amazonía y sierra.</p>
+  </div>
+
+  <!-- CARRUSEL -->
+  <div id="carouselRios" class="carousel slide mt-4 shadow" data-bs-ride="carousel">
+    <div class="carousel-inner">
+      <div class="carousel-item active">
+        <a href="rios/amazonas.html">
+          <img src="http://localhost:3000/images/amazonas.jpg" class="d-block w-100" alt="Río Amazonas">
+        </a>
+        <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded">
+          <h5>Río Amazonas</h5>
+          <p>El río más caudaloso del mundo y hogar de muchas especies como el paiche.</p>
+        </div>
+      </div>
+      <div class="carousel-item">
+        <a href="rios/ucayali.html">
+          <img src="http://localhost:3000/images/ucayali.jpg" class="d-block w-100" alt="Río Ucayali">
+        </a>
+        <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded">
+          <h5>Río Ucayali</h5>
+          <p>Fluye desde la sierra y alimenta la Amazonía peruana.</p>
+        </div>
+      </div>
+      <div class="carousel-item">
+        <a href="rios/maranon.html">
+          <img src="http://localhost:3000/images/maranon.jpg" class="d-block w-100" alt="Río Marañón">
+        </a>
+        <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded">
+          <h5>Río Marañón</h5>
+          <p>Uno de los grandes afluentes del Amazonas y de gran biodiversidad.</p>
+        </div>
+      </div>
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#carouselRios" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#carouselRios" data-bs-slide="next">
+      <span class="carousel-control-next-icon"></span>
+    </button>
+  </div>
+
+  <!-- GALERÍA DE PECES -->
+  <div id="galeria" class="container mt-5">
+    <div class="row" id="contenedor-peces"></div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer id="contacto" class="bg-success text-white text-center py-4 mt-5">
+    <p>© 2025 Proyecto Educativo Peces del Perú | Hecho con ❤️</p>
+  </footer>
+
+  <!-- MODAL LOGIN -->
+  <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form id="login-form">
+          <div class="modal-header">
+            <h5 class="modal-title" id="loginModalLabel">Iniciar Sesión</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="username" class="form-label">Usuario</label>
+              <input type="text" class="form-control" id="username" required>
+            </div>
+            <div class="mb-3">
+              <label for="password" class="form-label">Contraseña</label>
+              <input type="password" class="form-control" id="password" required>
+            </div>
+            <p id="login-msg" class="text-danger"></p>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-success">Ingresar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Script de lógica -->
+  <script>
+    async function cargarPeces() {
+      try {
+        const response = await fetch("http://localhost:3000/especies");
+        const data = await response.json();
+        const contenedor = document.getElementById("contenedor-peces");
+
+        data.forEach((pez) => {
+          const nombreArchivo = pez.nombre_comun.toLowerCase().replace(/\s+/g, '') + ".html";
+          const ruta = `peces/${nombreArchivo}`;
+          const tarjeta = `
+        	  <div class="col-md-4 mb-4">
+        	    <a href="${ruta}" class="text-decoration-none text-dark">
+        	      <div class="card h-100">
+        	        <img src="${pez.imagen_url.startsWith('http') ? pez.imagen_url : 'http://localhost:3000/images/' + pez.imagen_url}" class="card-img-top" alt="${pez.nombre_comun}">
+        	        <div class="card-body">
+        	          <h5 class="card-title">${pez.nombre_comun}</h5>
+        	          <p class="card-text">
+        	            <strong>Nombre científico:</strong> ${pez.nombre_cientifico}<br>
+        	            <strong>Familia:</strong> ${pez.familia}<br>
+        	            <strong>Alimentación:</strong> ${pez.alimentacion}<br>
+        	            <strong>Conservación:</strong> ${pez.estado_conservacion}
+        	          </p>
+        	        </div>
+        	      </div>
+        	    </a>
+        	  </div>`;
+          contenedor.innerHTML += tarjeta;
+        });
+      } catch (error) {
+        console.error("Error cargando peces:", error);
+      }
+    }
+
+    window.onload = cargarPeces;
+
+    // Login: abrir admin.html
+    document.getElementById("login-form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const user = document.getElementById("username").value;
+      const pass = document.getElementById("password").value;
+
+      if (user === "admin" && pass === "1234") {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+        modal.hide();
+        document.getElementById("login-msg").textContent = "";
+        window.open("admin.html", "_blank");
+      } else {
+        document.getElementById("login-msg").textContent = "Credenciales incorrectas";
+      }
+    });
+  </script>
+</body>
+</html>
+
+

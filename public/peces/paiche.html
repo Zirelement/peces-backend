@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ficha Técnica - Paiche</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-image: url('../images/fondo-rio.png');
+      background-size: cover;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+      background-position: center;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    .contenido {
+      background-color: rgba(255, 255, 255, 0.95);
+      padding: 30px;
+      margin: 40px auto;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      max-width: 900px;
+    }
+
+    .img-ficha {
+      max-width: 100%;
+      max-height: 350px;
+      object-fit: contain;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      transition: transform 0.3s ease;
+    }
+
+    .img-ficha:hover {
+      transform: scale(1.05);
+    }
+
+    .titulo-pez {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #14532d;
+    }
+
+    ul li {
+      margin-bottom: 8px;
+    }
+
+    .btn-volver {
+      margin-top: 30px;
+      background-color: #6ddccf;
+      color: #ffffff;
+      border: none;
+    }
+
+    .btn-volver:hover {
+      background-color: #48c5b5;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container contenido">
+    <div class="text-center mb-4">
+      <h1 class="titulo-pez">🐟 Paiche (Arapaima gigas)</h1>
+    </div>
+
+    <div class="text-center mb-4">
+      <img src="http://localhost:3000/images/paiche.png" alt="Paiche" class="img-ficha">
+    </div>
+
+    <div>
+      <h3 class="mb-3">🧾 Ficha Técnica</h3>
+      <ul>
+        <li><strong>Nombre común:</strong> Paiche</li>
+        <li><strong>Nombre científico:</strong> Arapaima gigas</li>
+        <li><strong>Hábitat:</strong> Ríos de la cuenca amazónica</li>
+        <li><strong>Tamaño:</strong> Hasta 2.5 metros</li>
+        <li><strong>Peso:</strong> Más de 100 kg</li>
+        <li><strong>Dato curioso:</strong> Puede respirar aire gracias a su vejiga natatoria.</li>
+      </ul>
+    </div>
+
+    <div class="text-center">
+      <a href="../peces.html" class="btn btn-volver">← Volver a la galería</a>
+    </div>
+  </div>
+</body>
+</html>
+
