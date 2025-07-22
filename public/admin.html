@@ -42,9 +42,34 @@
       + Agregar nuevo pez
     </button>
 
-    <!-- MODALES OMITIDOS PARA BREVEDAD (SON IGUALES) -->
+    <!-- Modal Agregar -->
+    <div class="modal fade" id="modalAgregarPez" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <form id="agregar-pez-form" enctype="multipart/form-data">
+            <div class="modal-header">
+              <h5 class="modal-title text-success">Agregar nuevo pez</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3"><label class="form-label">Nombre común</label><input type="text" class="form-control" name="nombre_comun" required></div>
+              <div class="mb-3"><label class="form-label">Nombre científico</label><input type="text" class="form-control" name="nombre_cientifico" required></div>
+              <div class="mb-3"><label class="form-label">Familia</label><input type="text" class="form-control" name="familia" required></div>
+              <div class="mb-3"><label class="form-label">Alimentación</label><input type="text" class="form-control" name="alimentacion" required></div>
+              <div class="mb-3"><label class="form-label">Estado de conservación</label><input type="text" class="form-control" name="estado_conservacion" required></div>
+              <div class="mb-3"><label class="form-label">Imagen</label><input type="file" class="form-control" name="imagen" accept="image/*" required></div>
+              <p id="agregar-msg" class="mt-2 text-success"></p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary btn-custom" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-primary btn-custom">Agregar Pez</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
 
-    <!-- Listado de peces -->
+    <!-- Contenedor de peces -->
     <h3 class="text-success">Especies actuales</h3>
     <div class="row" id="admin-contenedor-peces"></div>
   </div>
@@ -53,7 +78,6 @@
   <script>
     const baseURL = "https://peces-peruanos-app-8a65d063f3d4.herokuapp.com";
 
-    // Cargar peces
     async function cargarPeces() {
       const cont = document.getElementById("admin-contenedor-peces");
       cont.innerHTML = "";
@@ -61,11 +85,11 @@
         const res = await fetch(`${baseURL}/especies`);
         const peces = await res.json();
         peces.forEach(p => {
+          const imgUrl = p.imagen_url?.startsWith('http') ? p.imagen_url : `${baseURL}/images/${p.imagen_url}`;
           cont.innerHTML += `
             <div class="col-md-4 mb-4">
               <div class="card h-100">
-                <img src="${p.imagen_url.startsWith('http') ? p.imagen_url : `${baseURL}/images/${p.imagen_url}`}"
-                     class="card-img-top" alt="${p.nombre_comun}">
+                <img src="${imgUrl}" class="card-img-top" alt="${p.nombre_comun}">
                 <div class="card-body">
                   <h5 class="card-title">${p.nombre_comun}</h5>
                   <p class="card-text">
@@ -107,57 +131,23 @@
 
     // EDITAR
     function abrirEditar(p) {
-      document.getElementById("editar-id").value = p._id;
-      document.getElementById("editar-nombre_comun").value = p.nombre_comun;
-      document.getElementById("editar-nombre_cientifico").value = p.nombre_cientifico;
-      document.getElementById("editar-familia").value = p.familia;
-      document.getElementById("editar-alimentacion").value = p.alimentacion;
-      document.getElementById("editar-estado_conservacion").value = p.estado_conservacion;
-      bootstrap.Modal.getOrCreateInstance(document.getElementById("modalEditarPez")).show();
+      // Completar si deseas activar edición más adelante
+      alert("Función de editar en construcción.");
     }
-
-    document.getElementById("editar-pez-form").addEventListener("submit", async e => {
-      e.preventDefault();
-      const id = document.getElementById("editar-id").value;
-      const body = {
-        nombre_comun: document.getElementById("editar-nombre_comun").value,
-        nombre_cientifico: document.getElementById("editar-nombre_cientifico").value,
-        familia: document.getElementById("editar-familia").value,
-        alimentacion: document.getElementById("editar-alimentacion").value,
-        estado_conservacion: document.getElementById("editar-estado_conservacion").value
-      };
-      const res = await fetch(`${baseURL}/especies/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-      if (res.ok) {
-        document.getElementById("editar-msg").textContent = "✅ Actualizado.";
-        cargarPeces();
-        bootstrap.Modal.getInstance(document.getElementById("modalEditarPez")).hide();
-      } else {
-        const err = await res.json();
-        document.getElementById("editar-msg").textContent = "❌ " + err.message;
-      }
-    });
 
     // ELIMINAR
     function abrirEliminar(id, nombre) {
-      document.getElementById("eliminar-id").value = id;
-      document.getElementById("eliminar-nombre").textContent = nombre;
-      bootstrap.Modal.getOrCreateInstance(document.getElementById("modalEliminarPez")).show();
+      if (confirm(`¿Deseas eliminar a ${nombre}?`)) {
+        fetch(`${baseURL}/especies/${id}`, { method: "DELETE" })
+          .then(res => {
+            if (res.ok) cargarPeces();
+            else alert("❌ Error al eliminar");
+          });
+      }
     }
-
-    document.getElementById("confirmar-eliminar").addEventListener("click", async () => {
-      const id = document.getElementById("eliminar-id").value;
-      const res = await fetch(`${baseURL}/especies/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        bootstrap.Modal.getInstance(document.getElementById("modalEliminarPez")).hide();
-        cargarPeces();
-      } else alert("❌ Error al eliminar.");
-    });
 
     window.onload = cargarPeces;
   </script>
 </body>
 </html>
+
