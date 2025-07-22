@@ -142,6 +142,11 @@
       const data = await response.json();
       const contenedor = document.getElementById("contenedor-peces");
 
+      if (data.length === 0) {
+        contenedor.innerHTML = `<p class="text-muted text-center">No hay peces registrados aún.</p>`;
+        return;
+      }
+
       data.forEach((pez) => {
         const nombreArchivo = pez.nombre_comun.toLowerCase().replace(/\s+/g, '') + ".html";
         const ruta = `peces/${nombreArchivo}`;
@@ -152,15 +157,15 @@
         const tarjeta = `
           <div class="col-md-4 mb-4">
             <a href="${ruta}" class="text-decoration-none text-dark">
-              <div class="card h-100">
+              <div class="card h-100 shadow-sm">
                 <img src="${imagen}" class="card-img-top" alt="${pez.nombre_comun}">
                 <div class="card-body">
                   <h5 class="card-title">${pez.nombre_comun}</h5>
                   <p class="card-text">
                     <strong>Nombre científico:</strong> ${pez.nombre_cientifico}<br>
                     <strong>Familia:</strong> ${pez.familia}<br>
-                    <strong>Alimentación:</strong> ${pez.alimentacion}<br>
-                    <strong>Conservación:</strong> ${pez.estado_conservacion}
+                    <strong>Alimentación:</strong> ${pez.alimentacion || 'Desconocida'}<br>
+                    <strong>Conservación:</strong> ${pez.estado_conservacion || 'No especificado'}
                   </p>
                 </div>
               </div>
@@ -170,27 +175,14 @@
       });
     } catch (error) {
       console.error("Error cargando peces:", error);
+      document.getElementById("contenedor-peces").innerHTML =
+        `<p class="text-danger">Error al cargar los datos. Intenta más tarde.</p>`;
     }
   }
 
   window.onload = cargarPeces;
-
-  // Login: abrir admin.html
-  document.getElementById("login-form").addEventListener("submit", function(e) {
-    e.preventDefault();
-    const user = document.getElementById("username").value;
-    const pass = document.getElementById("password").value;
-
-    if (user === "admin" && pass === "1234") {
-      const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
-      modal.hide();
-      document.getElementById("login-msg").textContent = "";
-      window.open("admin.html", "_blank");
-    } else {
-      document.getElementById("login-msg").textContent = "Credenciales incorrectas";
-    }
-  });
 </script>
+
 
 </body>
 </html>
