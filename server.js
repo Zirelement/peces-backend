@@ -9,21 +9,16 @@ const app = express();
 
 // 1) CORS y JSON
 app.use(cors());
-// Servir el contenido estático de public/
-const path = require('path');
-app.use(express.static(path.join(__dirname, 'public')));
-
 app.use(express.json());
-// --- NUEVA LÍNEA: sirve los archivos de public/ ---
-app.use(express.static(path.join(__dirname, 'public')));
-// sirve las imágenes subidas
-app.use('/images', express.static(path.join(__dirname, 'images')));
 
-// 2) Servir estáticos (tu front) desde /public
+// 2) Servir archivos estáticos (frontend y subida de imágenes)
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
 
-// 3) Conexión a MongoDB
-mongoose.connect('mongodb://localhost:27017/pecesPeruanos', {
+// 3) Conexión a MongoDB Atlas o localhost
+const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/pecesPeruanos';
+
+mongoose.connect(mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
@@ -44,7 +39,7 @@ const Especie = mongoose.model('Especie', especieSchema);
 // 5) Multer para uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = path.join(__dirname, 'public/images');
+    const dir = path.join(__dirname, 'public', 'images');
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     cb(null, dir);
   },
@@ -62,13 +57,13 @@ app.get('/especies', async (req, res) => {
   res.json(especies);
 });
 
-// POST (sin imagen) — lo dejamos si lo necesitas
+// POST sin imagen
 app.post('/especies', async (req, res) => {
   try {
     const e = new Especie(req.body);
     await e.save();
     res.status(201).json({ mensaje: 'Pez agregado correctamente' });
-  } catch(err) {
+  } catch (err) {
     res.status(400).json({ error: 'No se pudo agregar la especie' });
   }
 });
@@ -78,13 +73,16 @@ app.post('/especies-con-imagen', upload.single('imagen'), async (req, res) => {
   try {
     const { nombre_comun, nombre_cientifico, familia, alimentacion, estado_conservacion } = req.body;
     const e = new Especie({
-      nombre_comun, nombre_cientifico, familia,
-      alimentacion, estado_conservacion,
+      nombre_comun,
+      nombre_cientifico,
+      familia,
+      alimentacion,
+      estado_conservacion,
       imagen_url: req.file.filename
     });
     await e.save();
     res.status(201).json({ mensaje: 'Especie agregada con imagen correctamente' });
-  } catch(err) {
+  } catch (err) {
     res.status(500).json({ error: 'Error al guardar la especie', detalles: err });
   }
 });
@@ -94,7 +92,7 @@ app.put('/especies/:id', async (req, res) => {
   try {
     await Especie.findByIdAndUpdate(req.params.id, req.body);
     res.json({ mensaje: 'Pez actualizado correctamente' });
-  } catch(err) {
+  } catch (err) {
     res.status(500).json({ error: 'No se pudo actualizar la especie' });
   }
 });
@@ -104,18 +102,17 @@ app.delete('/especies/:id', async (req, res) => {
   try {
     await Especie.findByIdAndDelete(req.params.id);
     res.json({ mensaje: 'Pez eliminado correctamente' });
-  } catch(err) {
+  } catch (err) {
     res.status(500).json({ error: 'No se pudo eliminar la especie' });
   }
 });
 
-// 7) Todos los demás GET/* los servimos con el front
-//    (es decir, si el usuario abre /admin.html o /peces.html está en public)
+// 7) Servir peces.html como fallback para rutas no encontradas
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'peces.html'));
 });
 
-// 8) Levantar servidor
+// 8) Levantar servidor con puerto dinámico (Heroku o local)
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
