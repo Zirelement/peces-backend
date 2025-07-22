@@ -116,7 +116,7 @@ app.get('*', (req, res) => {
 });
 
 // 8) Levantar servidor
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
 });
