@@ -1,10 +1,10 @@
+require('dotenv').config(); // ✅ Solo una vez
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
-const dotenv = require('dotenv');
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,14 +14,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// 🔌 Conexión a MongoDB Atlas o local
+// 🔌 Conexión a MongoDB Atlas o Local
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/pecesPeruanos', {
   useNewUrlParser: true,
   useUnifiedTopology: true
-}).then(() => console.log('✅ Conectado a MongoDB'))
-  .catch(err => console.error('❌ Error al conectar a MongoDB:', err));
+})
+.then(() => console.log('✅ Conectado a MongoDB'))
+.catch(err => console.error('❌ Error al conectar a MongoDB:', err));
 
-// 📦 Modelos
+// 📦 Esquemas
 const Especie = mongoose.model('Especie', new mongoose.Schema({
   nombre_comun: String,
   nombre_cientifico: String,
@@ -37,7 +38,7 @@ const Usuario = mongoose.model('Usuario', new mongoose.Schema({
   role: String
 }));
 
-// 📸 Multer para subir imágenes
+// 📸 Configuración Multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'public/images');
@@ -49,7 +50,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// 🌐 Vistas principales
+// 🌐 Rutas HTML
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/peces.html'));
 });
@@ -58,7 +59,7 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/admin.html'));
 });
 
-// 🐟 Endpoints API para especies
+// 🐟 API Especies
 app.get('/especies', async (req, res) => {
   const especies = await Especie.find();
   res.json(especies);
@@ -88,7 +89,7 @@ app.delete('/especies/:id', async (req, res) => {
   res.sendStatus(204);
 });
 
-// 🔐 Login
+// 🔐 Login simple
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
   try {
