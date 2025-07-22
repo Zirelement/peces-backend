@@ -6,6 +6,7 @@
   <title>Peces del Río Peruano</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <style>
     .card:hover { transform: scale(1.03); transition: all 0.3s ease-in-out; box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
     .card-img-top { height: 220px; object-fit: contain; }
@@ -27,7 +28,11 @@
         <ul class="navbar-nav ms-auto">
           <li class="nav-item"><a class="nav-link active" href="#galeria">Galería</a></li>
           <li class="nav-item"><a class="nav-link" href="#contacto">Contacto</a></li>
-          <li class="nav-item"><a class="nav-link" href="admin.html">Admin</a></li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">
+              <i class="bi bi-person-circle"></i> Iniciar sesión
+            </a>
+          </li>
         </ul>
       </div>
     </div>
@@ -88,12 +93,35 @@
     <p>© 2025 Proyecto Educativo Peces del Perú | Hecho con ❤️</p>
   </footer>
 
+  <!-- MODAL LOGIN -->
+  <div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form id="login-form">
+          <div class="modal-header">
+            <h5 class="modal-title">Acceder</h5>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="text" id="username" class="form-control mb-2" placeholder="Usuario" required>
+            <input type="password" id="password" class="form-control mb-2" placeholder="Contraseña" required>
+            <p id="login-msg" class="text-danger"></p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-success w-100" type="submit">Iniciar sesión</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Script de lógica -->
+  <!-- Lógica Frontend -->
   <script>
-    const baseURL = "https://peces-peruanos-app-8a65d063f3d4.herokuapp.com";
+  const baseURL = location.origin;
+
 
     async function cargarPeces() {
       try {
@@ -139,9 +167,32 @@
       }
     }
 
+    document.getElementById("login-form").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const user = document.getElementById("username").value.trim();
+      const pass = document.getElementById("password").value.trim();
+      const msg = document.getElementById("login-msg");
+
+      try {
+        const res = await fetch(`${baseURL}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: user, password: pass })
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          localStorage.setItem("userRole", json.rol);
+          window.location.href = "admin.html";
+        } else {
+          msg.textContent = "❌ Credenciales incorrectas.";
+        }
+      } catch (err) {
+        msg.textContent = "⚠️ Error de conexión.";
+      }
+    });
+
     window.onload = cargarPeces;
   </script>
 </body>
 </html>
-
-

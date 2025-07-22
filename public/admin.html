@@ -8,146 +8,177 @@
   <style>
     body { background-color: #f8f9fa; }
     .card-img-top { height: 200px; object-fit: contain; }
-    .btn-custom {
-      transition: all 0.3s ease-in-out;
-      border-radius: 8px;
-    }
-    .btn-custom:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-    }
+    .btn-custom { transition: all 0.3s ease-in-out; border-radius: 8px; }
+    .btn-custom:hover { transform: scale(1.05); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); }
     .btn-primary { background-color: #198754; border-color: #198754; }
     .btn-primary:hover { background-color: #146c43; }
     .btn-danger:hover { background-color: #bb2d3b; }
     .btn-warning:hover { background-color: #ffca2c; }
-    .top-buttons {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    #btn-agregar { display: block; margin: 0 auto 30px; }
+    .top-buttons { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    #btn-agregar { display: none; margin: 0 auto 30px; }
   </style>
 </head>
 <body class="bg-light">
 
-  <div class="container mt-4">
-    <div class="top-buttons">
-      <a href="peces.html" class="btn btn-outline-primary btn-custom">← Regresar a galería</a>
-      <a href="login.html" class="btn btn-outline-danger btn-custom">Salir</a>
+<div class="container mt-4">
+  <div class="top-buttons">
+    <a href="peces.html" class="btn btn-outline-primary btn-custom">← Regresar a galería</a>
+    <button onclick="logout()" class="btn btn-outline-danger btn-custom">Cerrar sesión</button>
+  </div>
+
+  <h1 class="text-center text-success mb-2">Panel de Administración 🛠️</h1>
+  <button id="btn-agregar" class="btn btn-success btn-custom" data-bs-toggle="modal" data-bs-target="#modalAgregarPez">
+    + Agregar nuevo pez
+  </button>
+
+  <!-- Modal Agregar -->
+  <div class="modal fade" id="modalAgregarPez" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form id="form-agregar">
+          <div class="modal-header">
+            <h5 class="modal-title">Agregar Pez</h5>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input class="form-control mb-2" name="nombre_comun" placeholder="Nombre común" required>
+            <input class="form-control mb-2" name="nombre_cientifico" placeholder="Nombre científico" required>
+            <input class="form-control mb-2" name="familia" placeholder="Familia" required>
+            <input class="form-control mb-2" name="alimentacion" placeholder="Alimentación">
+            <input class="form-control mb-2" name="estado_conservacion" placeholder="Estado de conservación">
+            <input class="form-control mb-2" type="file" name="imagen" accept="image/*" required>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-success w-100" type="submit">Guardar</button>
+          </div>
+        </form>
+      </div>
     </div>
+  </div>
 
-    <h1 class="text-center text-success mb-2">Panel de Administración 🛠️</h1>
+  <!-- Modal Editar -->
+  <div class="modal fade" id="modalEditar" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form id="form-editar">
+          <div class="modal-header">
+            <h5 class="modal-title">Editar Pez</h5>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" name="_id">
+            <input class="form-control mb-2" name="nombre_comun" required>
+            <input class="form-control mb-2" name="nombre_cientifico" required>
+            <input class="form-control mb-2" name="familia" required>
+            <input class="form-control mb-2" name="alimentacion">
+            <input class="form-control mb-2" name="estado_conservacion">
+            <input class="form-control mb-2" type="file" name="imagen" accept="image/*">
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-success w-100" type="submit">Actualizar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
-    <button id="btn-agregar" class="btn btn-success btn-custom" data-bs-toggle="modal" data-bs-target="#modalAgregarPez">
-      + Agregar nuevo pez
-    </button>
-
-    <!-- Modal Agregar -->
-    <div class="modal fade" id="modalAgregarPez" tabindex="-1">
-      <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-          <form id="agregar-pez-form" enctype="multipart/form-data">
-            <div class="modal-header">
-              <h5 class="modal-title text-success">Agregar nuevo pez</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-3"><label class="form-label">Nombre común</label><input type="text" class="form-control" name="nombre_comun" required></div>
-              <div class="mb-3"><label class="form-label">Nombre científico</label><input type="text" class="form-control" name="nombre_cientifico" required></div>
-              <div class="mb-3"><label class="form-label">Familia</label><input type="text" class="form-control" name="familia" required></div>
-              <div class="mb-3"><label class="form-label">Alimentación</label><input type="text" class="form-control" name="alimentacion" required></div>
-              <div class="mb-3"><label class="form-label">Estado de conservación</label><input type="text" class="form-control" name="estado_conservacion" required></div>
-              <div class="mb-3"><label class="form-label">Imagen</label><input type="file" class="form-control" name="imagen" accept="image/*" required></div>
-              <p id="agregar-msg" class="mt-2 text-success"></p>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary btn-custom" data-bs-dismiss="modal">Cancelar</button>
-              <button type="submit" class="btn btn-primary btn-custom">Agregar Pez</button>
-            </div>
-          </form>
+  <!-- Modal Eliminar -->
+  <div class="modal fade" id="modalEliminar" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirmar Eliminación</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p>¿Estás seguro de eliminar <strong id="pezAEliminar"></strong>?</p>
+          <input type="hidden" id="idEliminar">
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-danger w-100" onclick="eliminarPezConfirmado()">Eliminar</button>
         </div>
       </div>
     </div>
-
-    <!-- Contenedor de peces -->
-    <h3 class="text-success">Especies actuales</h3>
-    <div class="row" id="admin-contenedor-peces"></div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    const baseURL = "https://peces-peruanos-app-8a65d063f3d4.herokuapp.com";
+  <h3 class="text-success">Especies actuales</h3>
+  <div class="row" id="admin-contenedor-peces"></div>
+</div>
 
-    async function cargarPeces() {
-      const cont = document.getElementById("admin-contenedor-peces");
-      cont.innerHTML = "";
-      try {
-        const res = await fetch(`${baseURL}/especies`);
-        const peces = await res.json();
-        peces.forEach(p => {
-          const imgUrl = p.imagen_url?.startsWith('http') ? p.imagen_url : `${baseURL}/images/${p.imagen_url}`;
-          cont.innerHTML += `
-            <div class="col-md-4 mb-4">
-              <div class="card h-100">
-                <img src="${imgUrl}" class="card-img-top" alt="${p.nombre_comun}">
-                <div class="card-body">
-                  <h5 class="card-title">${p.nombre_comun}</h5>
-                  <p class="card-text">
-                    <strong>Científico:</strong> ${p.nombre_cientifico}<br>
-                    <strong>Familia:</strong> ${p.familia}<br>
-                    <strong>Alimentación:</strong> ${p.alimentacion}<br>
-                    <strong>Conservación:</strong> ${p.estado_conservacion}
-                  </p>
-                  <button class="btn btn-sm btn-warning btn-custom me-2"
-                          onclick='abrirEditar(${JSON.stringify(p)})'>Editar</button>
-                  <button class="btn btn-sm btn-danger btn-custom"
-                          onclick="abrirEliminar('${p._id}','${p.nombre_comun}')">Eliminar</button>
-                </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const baseURL = location.origin;
+
+
+  const userRole = localStorage.getItem('userRole');
+
+  if (!userRole) {
+    window.location.href = "peces.html";
+  } else if (userRole === 'admin') {
+    document.getElementById("btn-agregar").style.display = "block";
+  }
+
+  function logout() {
+    localStorage.removeItem("userRole");
+    window.location.href = "peces.html";
+  }
+
+  async function cargarPeces() {
+    const cont = document.getElementById("admin-contenedor-peces");
+    cont.innerHTML = "";
+    try {
+      const res = await fetch(`${baseURL}/especies`);
+      const peces = await res.json();
+      peces.forEach(p => {
+        cont.innerHTML += `
+          <div class="col-md-4 mb-4">
+            <div class="card h-100">
+              <img src="${p.imagen_url.startsWith('http') ? p.imagen_url : baseURL+'/images/'+p.imagen_url}" class="card-img-top">
+              <div class="card-body">
+                <h5 class="card-title">${p.nombre_comun}</h5>
+                <p class="card-text">
+                  <strong>Científico:</strong> ${p.nombre_cientifico}<br>
+                  <strong>Familia:</strong> ${p.familia}<br>
+                  <strong>Alimentación:</strong> ${p.alimentacion}<br>
+                  <strong>Conservación:</strong> ${p.estado_conservacion}
+                </p>
+                ${userRole === 'admin' || userRole === 'analista' ? `<button class="btn btn-sm btn-warning btn-custom me-2" onclick='abrirEditar(${JSON.stringify(p)})'>Editar</button>` : ''}
+                ${userRole === 'admin' ? `<button class="btn btn-sm btn-danger btn-custom" onclick="abrirEliminar('${p._id}','${p.nombre_comun}')">Eliminar</button>` : ''}
               </div>
-            </div>`;
-        });
-      } catch {
-        cont.innerHTML = `<p class="text-danger">Error al cargar las especies.</p>`;
-      }
-    }
-
-    // AGREGAR
-    document.getElementById("agregar-pez-form").addEventListener("submit", async e => {
-      e.preventDefault();
-      const fd = new FormData(e.target);
-      const res = await fetch(`${baseURL}/especies-con-imagen`, {
-        method: "POST", body: fd
+            </div>
+          </div>`;
       });
-      if (res.ok) {
-        document.getElementById("agregar-msg").textContent = "✅ Pez agregado.";
-        e.target.reset();
-        cargarPeces();
-        bootstrap.Modal.getInstance(document.getElementById("modalAgregarPez")).hide();
-      } else {
-        const err = await res.json();
-        document.getElementById("agregar-msg").textContent = "❌ " + err.message;
-      }
-    });
-
-    // EDITAR
-    function abrirEditar(p) {
-      // Completar si deseas activar edición más adelante
-      alert("Función de editar en construcción.");
+    } catch {
+      cont.innerHTML = `<p class="text-danger">Error al cargar las especies.</p>`;
     }
+  }
 
-    // ELIMINAR
-    function abrirEliminar(id, nombre) {
-      if (confirm(`¿Deseas eliminar a ${nombre}?`)) {
-        fetch(`${baseURL}/especies/${id}`, { method: "DELETE" })
-          .then(res => {
-            if (res.ok) cargarPeces();
-            else alert("❌ Error al eliminar");
-          });
-      }
-    }
+  function abrirEditar(p) {
+    const form = document.forms['form-editar'];
+    form._id.value = p._id;
+    form.nombre_comun.value = p.nombre_comun;
+    form.nombre_cientifico.value = p.nombre_cientifico;
+    form.familia.value = p.familia;
+    form.alimentacion.value = p.alimentacion;
+    form.estado_conservacion.value = p.estado_conservacion;
+    new bootstrap.Modal(document.getElementById("modalEditar")).show();
+  }
 
-    window.onload = cargarPeces;
-  </script>
+  function abrirEliminar(id, nombre) {
+    document.getElementById("idEliminar").value = id;
+    document.getElementById("pezAEliminar").textContent = nombre;
+    new bootstrap.Modal(document.getElementById("modalEliminar")).show();
+  }
+
+  function eliminarPezConfirmado() {
+    const id = document.getElementById("idEliminar").value;
+    fetch(`${baseURL}/especies/${id}`, {
+      method: "DELETE"
+    }).then(() => cargarPeces());
+  }
+
+  window.onload = cargarPeces;
+</script>
 </body>
 </html>
 
