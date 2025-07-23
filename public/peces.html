@@ -16,7 +16,6 @@
   </style>
 </head>
 <body class="bg-light">
-
   <!-- NAVBAR -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-success sticky-top shadow">
     <div class="container">
@@ -85,7 +84,9 @@
 
   <!-- GALERÍA DE PECES -->
   <div id="galeria" class="container mt-5">
-    <div class="row" id="contenedor-peces"></div>
+    <div class="row" id="contenedor-peces">
+      <!-- Las tarjetas de peces se insertan dinámicamente con JS -->
+    </div>
   </div>
 
   <!-- FOOTER -->
@@ -120,8 +121,7 @@
 
   <!-- Lógica Frontend -->
   <script>
-  const baseURL = location.origin;
-
+    const baseURL = location.origin;
 
     async function cargarPeces() {
       try {
@@ -196,3 +196,4 @@
   </script>
 </body>
 </html>
+

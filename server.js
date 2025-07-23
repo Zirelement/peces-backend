@@ -1,5 +1,7 @@
 // server.js
 require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
 
 const express = require('express');
 const cors = require('cors');
@@ -92,7 +94,27 @@ app.post('/especies', upload.single('imagen'), async (req, res) => {
       ...req.body,
       imagen_url: req.file?.path || ''
     });
+
     await nueva.save();
+
+    // --- GENERAR FICHA HTML ---
+    const templatePath = path.join(__dirname, 'templates', 'fichaTemplate.html');
+    let plantilla = fs.readFileSync(templatePath, 'utf8');
+
+    // Reemplazar placeholders
+    plantilla = plantilla
+      .replace(/{{NOMBRE_COMUN}}/g, nueva.nombre_comun)
+      .replace(/{{NOMBRE_CIENTIFICO}}/g, nueva.nombre_cientifico)
+      .replace(/{{FAMILIA}}/g, nueva.familia)
+      .replace(/{{ALIMENTACION}}/g, nueva.alimentacion)
+      .replace(/{{ESTADO_CONSERVACION}}/g, nueva.estado_conservacion)
+      .replace(/{{IMAGEN_URL}}/g, nueva.imagen_url);
+
+    const nombreArchivo = nueva.nombre_comun.toLowerCase().replace(/\s+/g, '-') + '.html';
+    const outputPath = path.join(__dirname, 'public', 'peces', nombreArchivo);
+    fs.writeFileSync(outputPath, plantilla);
+
+    console.log(`✅ Ficha creada: /peces/${nombreArchivo}`);
     res.status(201).json(nueva);
   } catch (err) {
     console.error('POST /especies error:', err);
@@ -100,27 +122,6 @@ app.post('/especies', upload.single('imagen'), async (req, res) => {
   }
 });
 
-app.put('/especies/:id', upload.single('imagen'), async (req, res) => {
-  try {
-    const update = { ...req.body };
-    if (req.file) update.imagen_url = req.file.path;
-    const updated = await Especie.findByIdAndUpdate(req.params.id, update, { new: true });
-    res.json(updated);
-  } catch (err) {
-    console.error('PUT /especies/:id error:', err);
-    res.status(500).json({ error: 'No se pudo actualizar especie' });
-  }
-});
-
-app.delete('/especies/:id', async (req, res) => {
-  try {
-    await Especie.findByIdAndDelete(req.params.id);
-    res.sendStatus(204);
-  } catch (err) {
-    console.error('DELETE /especies/:id error:', err);
-    res.status(500).json({ error: 'No se pudo eliminar especie' });
-  }
-});
 
 // --- API: Login ---
 app.post('/login', async (req, res) => {
