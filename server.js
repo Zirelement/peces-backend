@@ -1,4 +1,3 @@
-// server.js
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
@@ -98,58 +97,6 @@ app.post('/especies', upload.single('imagen'), async (req, res) => {
     });
 
     await nueva.save();
-	// PUT: Actualizar especie
-	app.put('/especies/:id', upload.single('imagen'), async (req, res) => {
-	  try {
-	    const { id } = req.params;
-	    const updateData = {
-	      nombre_comun: req.body.nombre_comun,
-	      nombre_cientifico: req.body.nombre_cientifico,
-	      familia: req.body.familia,
-	      alimentacion: req.body.alimentacion,
-	      estado_conservacion: req.body.estado_conservacion
-	    };
-
-	    // Si hay nueva imagen, subirla y actualizar URL
-	    if (req.file) {
-	      const resultado = await cloudinary.uploader.upload(req.file.path);
-	      updateData.imagen_url = resultado.secure_url;
-	    }
-
-	    await Especie.findByIdAndUpdate(id, updateData);
-	    res.json({ message: 'Especie actualizada' });
-	  } catch (err) {
-	    console.error('PUT /especies/:id error:', err);
-	    res.status(500).json({ error: 'No se pudo actualizar la especie' });
-	  }
-	});
-
-	// DELETE: Eliminar especie y su HTML
-	app.delete('/especies/:id', async (req, res) => {
-	  try {
-	    const { id } = req.params;
-
-	    const especie = await Especie.findByIdAndDelete(id);
-	    if (!especie) return res.status(404).json({ error: 'No encontrada' });
-
-	    // Generar el nombre del archivo HTML basado en el nombre común
-	    const nombreArchivo = especie.nombre_comun.toLowerCase().replace(/\s+/g, '-') + '.html';
-	    const rutaHTML = path.join(__dirname, 'public', 'peces', nombreArchivo);
-
-	    // Verificar y eliminar archivo si existe
-	    if (fs.existsSync(rutaHTML)) {
-	      fs.unlinkSync(rutaHTML);
-	      console.log(`🗑️ Ficha eliminada: /peces/${nombreArchivo}`);
-	    }
-
-	    res.status(204).send(); // No Content
-	  } catch (err) {
-	    console.error('DELETE /especies/:id error:', err);
-	    res.status(500).json({ error: 'No se pudo eliminar la especie' });
-	  }
-	});
-
-
 
     // --- GENERAR FICHA HTML DESDE PLANTILLA ---
     const templatePath = path.join(__dirname, 'templates', 'fichaTemplate.html');
@@ -184,6 +131,54 @@ app.post('/especies', upload.single('imagen'), async (req, res) => {
   }
 });
 
+// --- PUT: Actualizar especie ---
+app.put('/especies/:id', upload.single('imagen'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = {
+      nombre_comun: req.body.nombre_comun,
+      nombre_cientifico: req.body.nombre_cientifico,
+      familia: req.body.familia,
+      alimentacion: req.body.alimentacion,
+      estado_conservacion: req.body.estado_conservacion
+    };
+
+    if (req.file) {
+      const resultado = await cloudinary.uploader.upload(req.file.path);
+      updateData.imagen_url = resultado.secure_url;
+    }
+
+    await Especie.findByIdAndUpdate(id, updateData);
+    res.json({ message: 'Especie actualizada' });
+  } catch (err) {
+    console.error('PUT /especies/:id error:', err);
+    res.status(500).json({ error: 'No se pudo actualizar la especie' });
+  }
+});
+
+// --- DELETE: Eliminar especie y su HTML ---
+app.delete('/especies/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const especie = await Especie.findByIdAndDelete(id);
+    if (!especie) return res.status(404).json({ error: 'No encontrada' });
+
+    const nombreArchivo = especie.nombre_comun.toLowerCase().replace(/\s+/g, '-') + '.html';
+    const rutaHTML = path.join(__dirname, 'public', 'peces', nombreArchivo);
+
+    if (fs.existsSync(rutaHTML)) {
+      fs.unlinkSync(rutaHTML);
+      console.log(`🗑️ Ficha eliminada: /peces/${nombreArchivo}`);
+    }
+
+    res.status(204).send();
+  } catch (err) {
+    console.error('DELETE /especies/:id error:', err);
+    res.status(500).json({ error: 'No se pudo eliminar la especie' });
+  }
+});
+
 // --- API: Login ---
 app.post('/login', async (req, res) => {
   try {
@@ -199,5 +194,4 @@ app.post('/login', async (req, res) => {
 
 // --- INICIAR SERVIDOR ---
 app.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
-
 
