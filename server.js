@@ -1,4 +1,3 @@
-
 // server.js
 // Carga de variables de entorno (debe estar al inicio)
 require('dotenv').config();
@@ -147,6 +146,4 @@ app.post('/login', async (req, res) => {
 
 // --- INICIAR SERVIDOR ---
 app.listen(PORT, () => console.log(`✅ Servidor corriendo en puerto ${PORT}`));
-```
-
 
