@@ -1,5 +1,4 @@
 // server.js
-// Carga de variables de entorno
 require('dotenv').config();
 
 const express = require('express');
@@ -16,7 +15,6 @@ const PORT = process.env.PORT || 3000;
 // --- MIDDLEWARES ---
 app.use(cors());
 app.use(express.json());
-// Servir carpeta public con index personalizado
 app.use(express.static(path.join(__dirname, 'public')));
 
 // --- CONEXIÓN A MONGODB ---
@@ -43,17 +41,13 @@ const usuarioSchema = new mongoose.Schema({
 });
 const Usuario = mongoose.model('Usuario', usuarioSchema);
 
-// --- CLOUDINARY SETUP ---
-if (process.env.CLOUDINARY_URL) {
-  cloudinary.config({ cloudinary_url: process.env.CLOUDINARY_URL, secure: true });
-} else {
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true,
-  });
-}
+// --- CLOUDINARY CONFIG ---
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true,
+});
 
 // --- MULTER + CLOUDINARY STORAGE ---
 const storage = new CloudinaryStorage({
@@ -67,7 +61,6 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 // --- RUTAS PRINCIPALES ---
-// En producción, 'public/peces.html' se sirve como front
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public/peces.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/admin.html')));
 
@@ -84,7 +77,10 @@ app.get('/especies', async (req, res) => {
 
 app.post('/especies', upload.single('imagen'), async (req, res) => {
   try {
-    const nueva = new Especie({ ...req.body, imagen_url: req.file?.path || '' });
+    const nueva = new Especie({
+      ...req.body,
+      imagen_url: req.file?.path || ''
+    });
     await nueva.save();
     res.status(201).json(nueva);
   } catch (err) {
