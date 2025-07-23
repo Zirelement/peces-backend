@@ -18,10 +18,20 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // --- CONEXIÓN A MONGODB ---
-const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/pecesPeruanos';
-mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('✅ Conectado a MongoDB'))
-  .catch(err => console.error('❌ Error al conectar a MongoDB:', err));
+const mongoose = require('mongoose');
+
+const uri = process.env.MONGODB_URI;
+
+if (!uri) {
+  console.error('❌ MONGODB_URI no está definida. Asegúrate de configurar la variable en Heroku.');
+  process.exit(1);
+}
+
+mongoose.connect(uri, {
+  dbName: 'pecesPeruanos' // o el nombre exacto de tu base
+})
+.then(() => console.log('✅ Conectado a MongoDB Atlas'))
+.catch(err => console.error('❌ Error al conectar a MongoDB:', err));
 
 // --- MODELOS ---
 const especieSchema = new mongoose.Schema({
