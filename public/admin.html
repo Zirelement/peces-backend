@@ -108,76 +108,110 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const baseURL = location.origin;
+const userRole = localStorage.getItem('userRole');
 
+if (!userRole) {
+  window.location.href = "peces.html";
+} else if (userRole === 'admin') {
+  document.getElementById("btn-agregar").style.display = "block";
+}
 
-  const userRole = localStorage.getItem('userRole');
+function logout() {
+  localStorage.removeItem("userRole");
+  window.location.href = "peces.html";
+}
 
-  if (!userRole) {
-    window.location.href = "peces.html";
-  } else if (userRole === 'admin') {
-    document.getElementById("btn-agregar").style.display = "block";
-  }
-
-  function logout() {
-    localStorage.removeItem("userRole");
-    window.location.href = "peces.html";
-  }
-
-  async function cargarPeces() {
-    const cont = document.getElementById("admin-contenedor-peces");
-    cont.innerHTML = "";
-    try {
-      const res = await fetch(`${baseURL}/especies`);
-      const peces = await res.json();
-      peces.forEach(p => {
-        cont.innerHTML += `
-          <div class="col-md-4 mb-4">
-            <div class="card h-100">
-              <img src="${p.imagen_url.startsWith('http') ? p.imagen_url : baseURL+'/images/'+p.imagen_url}" class="card-img-top">
-              <div class="card-body">
-                <h5 class="card-title">${p.nombre_comun}</h5>
-                <p class="card-text">
-                  <strong>Científico:</strong> ${p.nombre_cientifico}<br>
-                  <strong>Familia:</strong> ${p.familia}<br>
-                  <strong>Alimentación:</strong> ${p.alimentacion}<br>
-                  <strong>Conservación:</strong> ${p.estado_conservacion}
-                </p>
-                ${userRole === 'admin' || userRole === 'analista' ? `<button class="btn btn-sm btn-warning btn-custom me-2" onclick='abrirEditar(${JSON.stringify(p)})'>Editar</button>` : ''}
-                ${userRole === 'admin' ? `<button class="btn btn-sm btn-danger btn-custom" onclick="abrirEliminar('${p._id}','${p.nombre_comun}')">Eliminar</button>` : ''}
-              </div>
+async function cargarPeces() {
+  const cont = document.getElementById("admin-contenedor-peces");
+  cont.innerHTML = "";
+  try {
+    const res = await fetch(`${baseURL}/especies`);
+    const peces = await res.json();
+    peces.forEach(p => {
+      cont.innerHTML += `
+        <div class="col-md-4 mb-4">
+          <div class="card h-100">
+            <img src="${p.imagen_url.startsWith('http') ? p.imagen_url : baseURL+'/images/'+p.imagen_url}" class="card-img-top">
+            <div class="card-body">
+              <h5 class="card-title">${p.nombre_comun}</h5>
+              <p class="card-text">
+                <strong>Científico:</strong> ${p.nombre_cientifico}<br>
+                <strong>Familia:</strong> ${p.familia}<br>
+                <strong>Alimentación:</strong> ${p.alimentacion}<br>
+                <strong>Conservación:</strong> ${p.estado_conservacion}
+              </p>
+              ${userRole === 'admin' || userRole === 'analista' ? `<button class="btn btn-sm btn-warning btn-custom me-2" onclick='abrirEditar(${JSON.stringify(p)})'>Editar</button>` : ''}
+              ${userRole === 'admin' ? `<button class="btn btn-sm btn-danger btn-custom" onclick="abrirEliminar('${p._id}','${p.nombre_comun}')">Eliminar</button>` : ''}
             </div>
-          </div>`;
-      });
-    } catch {
-      cont.innerHTML = `<p class="text-danger">Error al cargar las especies.</p>`;
-    }
+          </div>
+        </div>`;
+    });
+  } catch (e) {
+    cont.innerHTML = `<p class="text-danger">Error al cargar las especies.</p>`;
   }
+}
 
-  function abrirEditar(p) {
-    const form = document.forms['form-editar'];
-    form._id.value = p._id;
-    form.nombre_comun.value = p.nombre_comun;
-    form.nombre_cientifico.value = p.nombre_cientifico;
-    form.familia.value = p.familia;
-    form.alimentacion.value = p.alimentacion;
-    form.estado_conservacion.value = p.estado_conservacion;
-    new bootstrap.Modal(document.getElementById("modalEditar")).show();
+// Formularios
+// Agregar
+document.getElementById('form-agregar').addEventListener('submit', async e => {
+  e.preventDefault();
+  const form = e.target;
+  const data = new FormData(form);
+  const res = await fetch(`${baseURL}/especies`, {
+    method: 'POST',
+    body: data
+  });
+  if (res.ok) {
+    bootstrap.Modal.getInstance(document.getElementById('modalAgregarPez')).hide();
+    form.reset();
+    cargarPeces();
+  } else {
+    alert('Error al agregar pez');
   }
+});
 
-  function abrirEliminar(id, nombre) {
-    document.getElementById("idEliminar").value = id;
-    document.getElementById("pezAEliminar").textContent = nombre;
-    new bootstrap.Modal(document.getElementById("modalEliminar")).show();
+// Editar
+function abrirEditar(p) {
+  const form = document.getElementById('form-editar');
+  form._id.value = p._id;
+  form.nombre_comun.value = p.nombre_comun;
+  form.nombre_cientifico.value = p.nombre_cientifico;
+  form.familia.value = p.familia;
+  form.alimentacion.value = p.alimentacion;
+  form.estado_conservacion.value = p.estado_conservacion;
+  new bootstrap.Modal(document.getElementById('modalEditar')).show();
+}
+document.getElementById('form-editar').addEventListener('submit', async e => {
+  e.preventDefault();
+  const form = e.target;
+  const id = form._id.value;
+  const data = new FormData(form);
+  const res = await fetch(`${baseURL}/especies/${id}`, {
+    method: 'PUT',
+    body: data
+  });
+  if (res.ok) {
+    bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
+    cargarPeces();
+  } else {
+    alert('Error al actualizar pez');
   }
+});
 
-  function eliminarPezConfirmado() {
-    const id = document.getElementById("idEliminar").value;
-    fetch(`${baseURL}/especies/${id}`, {
-      method: "DELETE"
-    }).then(() => cargarPeces());
-  }
+// Eliminar
+function abrirEliminar(id, nombre) {
+  document.getElementById('idEliminar').value = id;
+  document.getElementById('pezAEliminar').textContent = nombre;
+  new bootstrap.Modal(document.getElementById('modalEliminar')).show();
+}
+function eliminarPezConfirmado() {
+  const id = document.getElementById('idEliminar').value;
+  fetch(`${baseURL}/especies/${id}`, { method: 'DELETE' })
+    .then(() => carregarPeces());
+}
 
-  window.onload = cargarPeces;
+// Inicio
+window.onload = cargarPeces;
 </script>
 </body>
 </html>
