@@ -38,7 +38,7 @@
         <form id="form-agregar">
           <div class="modal-header">
             <h5 class="modal-title">Agregar Pez</h5>
-            <button class="btn-close" data-bs-dismiss="modal"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
             <input class="form-control mb-2" name="nombre_comun" placeholder="Nombre común" required>
@@ -63,7 +63,7 @@
         <form id="form-editar">
           <div class="modal-header">
             <h5 class="modal-title">Editar Pez</h5>
-            <button class="btn-close" data-bs-dismiss="modal"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
             <input type="hidden" name="_id">
@@ -88,7 +88,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Confirmar Eliminación</h5>
-          <button class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <p>¿Estás seguro de eliminar <strong id="pezAEliminar"></strong>?</p>
@@ -111,19 +111,19 @@ const baseURL = location.origin;
 const userRole = localStorage.getItem('userRole');
 
 if (!userRole) {
-  window.location.href = "peces.html";
+  window.location.href = 'peces.html';
 } else if (userRole === 'admin') {
-  document.getElementById("btn-agregar").style.display = "block";
+  document.getElementById('btn-agregar').style.display = 'block';
 }
 
 function logout() {
-  localStorage.removeItem("userRole");
-  window.location.href = "peces.html";
+  localStorage.removeItem('userRole');
+  window.location.href = 'peces.html';
 }
 
 async function cargarPeces() {
-  const cont = document.getElementById("admin-contenedor-peces");
-  cont.innerHTML = "";
+  const cont = document.getElementById('admin-contenedor-peces');
+  cont.innerHTML = '';
   try {
     const res = await fetch(`${baseURL}/especies`);
     const peces = await res.json();
@@ -131,7 +131,7 @@ async function cargarPeces() {
       cont.innerHTML += `
         <div class="col-md-4 mb-4">
           <div class="card h-100">
-            <img src="${p.imagen_url.startsWith('http') ? p.imagen_url : baseURL+'/images/'+p.imagen_url}" class="card-img-top">
+            <img src="${p.imagen_url}" class="card-img-top" alt="${p.nombre_comun}">
             <div class="card-body">
               <h5 class="card-title">${p.nombre_comun}</h5>
               <p class="card-text">
@@ -147,30 +147,27 @@ async function cargarPeces() {
         </div>`;
     });
   } catch (e) {
+    console.error('Error al cargar especies:', e);
     cont.innerHTML = `<p class="text-danger">Error al cargar las especies.</p>`;
   }
 }
 
-// Formularios
-// Agregar
-document.getElementById('form-agregar').addEventListener('submit', async e => {
+// Agregar Pez
+const formAdd = document.getElementById('form-agregar');
+formAdd.addEventListener('submit', async e => {
   e.preventDefault();
-  const form = e.target;
-  const data = new FormData(form);
-  const res = await fetch(`${baseURL}/especies`, {
-    method: 'POST',
-    body: data
-  });
+  const data = new FormData(formAdd);
+  const res = await fetch(`${baseURL}/especies`, { method: 'POST', body: data });
   if (res.ok) {
     bootstrap.Modal.getInstance(document.getElementById('modalAgregarPez')).hide();
-    form.reset();
+    formAdd.reset();
     cargarPeces();
   } else {
     alert('Error al agregar pez');
   }
 });
 
-// Editar
+// Editar Pez
 function abrirEditar(p) {
   const form = document.getElementById('form-editar');
   form._id.value = p._id;
@@ -181,15 +178,12 @@ function abrirEditar(p) {
   form.estado_conservacion.value = p.estado_conservacion;
   new bootstrap.Modal(document.getElementById('modalEditar')).show();
 }
-document.getElementById('form-editar').addEventListener('submit', async e => {
+const formEdit = document.getElementById('form-editar');
+formEdit.addEventListener('submit', async e => {
   e.preventDefault();
-  const form = e.target;
-  const id = form._id.value;
-  const data = new FormData(form);
-  const res = await fetch(`${baseURL}/especies/${id}`, {
-    method: 'PUT',
-    body: data
-  });
+  const data = new FormData(formEdit);
+  const id = formEdit._id.value;
+  const res = await fetch(`${baseURL}/especies/${id}`, { method: 'PUT', body: data });
   if (res.ok) {
     bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
     cargarPeces();
@@ -198,7 +192,7 @@ document.getElementById('form-editar').addEventListener('submit', async e => {
   }
 });
 
-// Eliminar
+// Eliminar Pez
 function abrirEliminar(id, nombre) {
   document.getElementById('idEliminar').value = id;
   document.getElementById('pezAEliminar').textContent = nombre;
@@ -207,7 +201,7 @@ function abrirEliminar(id, nombre) {
 function eliminarPezConfirmado() {
   const id = document.getElementById('idEliminar').value;
   fetch(`${baseURL}/especies/${id}`, { method: 'DELETE' })
-    .then(() => carregarPeces());
+    .then(() => cargarPeces());
 }
 
 // Inicio
@@ -215,4 +209,5 @@ window.onload = cargarPeces;
 </script>
 </body>
 </html>
+
 
