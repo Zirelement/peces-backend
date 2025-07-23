@@ -1,212 +1,137 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Panel de Administración</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body { background-color: #f8f9fa; }
-    .card-img-top { height: 200px; object-fit: contain; }
-    .btn-custom { transition: all 0.3s ease-in-out; border-radius: 8px; }
-    .btn-custom:hover { transform: scale(1.05); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); }
-    .btn-primary { background-color: #198754; border-color: #198754; }
-    .btn-primary:hover { background-color: #146c43; }
-    .btn-danger:hover { background-color: #bb2d3b; }
-    .btn-warning:hover { background-color: #ffca2c; }
-    .top-buttons { display: flex; justify-content: space-between; margin-bottom: 10px; }
-    #btn-agregar { display: none; margin: 0 auto 30px; }
-  </style>
-</head>
-<body class="bg-light">
+// server.js
+require('dotenv').config();
 
-<div class="container mt-4">
-  <div class="top-buttons">
-    <a href="peces.html" class="btn btn-outline-primary btn-custom">← Regresar a galería</a>
-    <button onclick="logout()" class="btn btn-outline-danger btn-custom">Cerrar sesión</button>
-  </div>
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const multer = require('multer');
+const path = require('path');
+const { v2: cloudinary } = require('cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-  <h1 class="text-center text-success mb-2">Panel de Administración 🛠️</h1>
-  <button id="btn-agregar" class="btn btn-success btn-custom" data-bs-toggle="modal" data-bs-target="#modalAgregarPez">
-    + Agregar nuevo pez
-  </button>
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-  <!-- Modal Agregar -->
-  <div class="modal fade" id="modalAgregarPez" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <form id="form-agregar">
-          <div class="modal-header">
-            <h5 class="modal-title">Agregar Pez</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <input class="form-control mb-2" name="nombre_comun" placeholder="Nombre común" required>
-            <input class="form-control mb-2" name="nombre_cientifico" placeholder="Nombre científico" required>
-            <input class="form-control mb-2" name="familia" placeholder="Familia" required>
-            <input class="form-control mb-2" name="alimentacion" placeholder="Alimentación">
-            <input class="form-control mb-2" name="estado_conservacion" placeholder="Estado de conservación">
-            <input class="form-control mb-2" type="file" name="imagen" accept="image/*" required>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-success w-100" type="submit">Guardar</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
+// --- Middlewares ---
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+// Servir archivos estáticos (front-end y assets)
+app.use(express.static(path.join(__dirname, 'public')));
 
-  <!-- Modal Editar -->
-  <div class="modal fade" id="modalEditar" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <form id="form-editar">
-          <div class="modal-header">
-            <h5 class="modal-title">Editar Pez</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <input type="hidden" name="_id">
-            <input class="form-control mb-2" name="nombre_comun" required>
-            <input class="form-control mb-2" name="nombre_cientifico" required>
-            <input class="form-control mb-2" name="familia" required>
-            <input class="form-control mb-2" name="alimentacion">
-            <input class="form-control mb-2" name="estado_conservacion">
-            <input class="form-control mb-2" type="file" name="imagen" accept="image/*">
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-success w-100" type="submit">Actualizar</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
+// --- Conexión a MongoDB ---
+mongoose.connect(
+  process.env.MONGODB_URI || 'mongodb://localhost:27017/pecesPeruanos',
+  { useNewUrlParser: true, useUnifiedTopology: true }
+)
+  .then(() => console.log('✅ Conectado a MongoDB'))
+  .catch(err => console.error('❌ Error al conectar a MongoDB:', err));
 
-  <!-- Modal Eliminar -->
-  <div class="modal fade" id="modalEliminar" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Confirmar Eliminación</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <p>¿Estás seguro de eliminar <strong id="pezAEliminar"></strong>?</p>
-          <input type="hidden" id="idEliminar">
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-danger w-100" onclick="eliminarPezConfirmado()">Eliminar</button>
-        </div>
-      </div>
-    </div>
-  </div>
+// --- Configuración de Cloudinary ---
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-  <h3 class="text-success">Especies actuales</h3>
-  <div class="row" id="admin-contenedor-peces"></div>
-</div>
+// --- Multer + Cloudinary Storage ---
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'peces',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    public_id: (req, file) => `${Date.now()}_${file.originalname.replace(/\.[^/.]+$/, '')}`
+  }
+});
+const upload = multer({ storage });
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-const baseURL = location.origin;
-const userRole = localStorage.getItem('userRole');
+// --- Modelos ---
+const especieSchema = new mongoose.Schema({
+  nombre_comun: String,
+  nombre_cientifico: String,
+  familia: String,
+  alimentacion: String,
+  estado_conservacion: String,
+  imagen_url: String,
+}, { timestamps: true });
 
-if (!userRole) {
-  window.location.href = 'peces.html';
-} else if (userRole === 'admin') {
-  document.getElementById('btn-agregar').style.display = 'block';
-}
+const usuarioSchema = new mongoose.Schema({
+  username: { type: String, unique: true },
+  password: String,
+  role: { type: String, enum: ['admin','analista'], default: 'analista' }
+});
 
-function logout() {
-  localStorage.removeItem('userRole');
-  window.location.href = 'peces.html';
-}
+const Especie = mongoose.model('Especie', especieSchema);
+const Usuario = mongoose.model('Usuario', usuarioSchema);
 
-async function cargarPeces() {
-  const cont = document.getElementById('admin-contenedor-peces');
-  cont.innerHTML = '';
+// --- Rutas vistas ---
+app.get('/', (_req, res) => res.redirect('/peces.html'));
+app.get('/admin', (_req, res) => res.redirect('/admin.html'));
+// (admin.html y peces.html quedan en /public)
+
+// --- API: Especies ---
+app.get('/especies', async (_req, res) => {
+  const lista = await Especie.find().sort({ createdAt: -1 });
+  res.json(lista);
+});
+
+app.post('/especies', upload.single('imagen'), async (req, res) => {
   try {
-    const res = await fetch(`${baseURL}/especies`);
-    const peces = await res.json();
-    peces.forEach(p => {
-      cont.innerHTML += `
-        <div class="col-md-4 mb-4">
-          <div class="card h-100">
-            <img src="${p.imagen_url}" class="card-img-top" alt="${p.nombre_comun}">
-            <div class="card-body">
-              <h5 class="card-title">${p.nombre_comun}</h5>
-              <p class="card-text">
-                <strong>Científico:</strong> ${p.nombre_cientifico}<br>
-                <strong>Familia:</strong> ${p.familia}<br>
-                <strong>Alimentación:</strong> ${p.alimentacion}<br>
-                <strong>Conservación:</strong> ${p.estado_conservacion}
-              </p>
-              ${userRole === 'admin' || userRole === 'analista' ? `<button class="btn btn-sm btn-warning btn-custom me-2" onclick='abrirEditar(${JSON.stringify(p)})'>Editar</button>` : ''}
-              ${userRole === 'admin' ? `<button class="btn btn-sm btn-danger btn-custom" onclick="abrirEliminar('${p._id}','${p.nombre_comun}')">Eliminar</button>` : ''}
-            </div>
-          </div>
-        </div>`;
+    const { body, file } = req;
+    const nueva = new Especie({
+      ...body,
+      imagen_url: file?.path || ''
     });
-  } catch (e) {
-    console.error('Error al cargar especies:', e);
-    cont.innerHTML = `<p class="text-danger">Error al cargar las especies.</p>`;
-  }
-}
-
-// Agregar Pez
-const formAdd = document.getElementById('form-agregar');
-formAdd.addEventListener('submit', async e => {
-  e.preventDefault();
-  const data = new FormData(formAdd);
-  const res = await fetch(`${baseURL}/especies`, { method: 'POST', body: data });
-  if (res.ok) {
-    bootstrap.Modal.getInstance(document.getElementById('modalAgregarPez')).hide();
-    formAdd.reset();
-    cargarPeces();
-  } else {
-    alert('Error al agregar pez');
+    await nueva.save();
+    res.status(201).json(nueva);
+  } catch (err) {
+    console.error('Error POST /especies:', err);
+    res.status(500).json({ error: 'Error al crear especie' });
   }
 });
 
-// Editar Pez
-function abrirEditar(p) {
-  const form = document.getElementById('form-editar');
-  form._id.value = p._id;
-  form.nombre_comun.value = p.nombre_comun;
-  form.nombre_cientifico.value = p.nombre_cientifico;
-  form.familia.value = p.familia;
-  form.alimentacion.value = p.alimentacion;
-  form.estado_conservacion.value = p.estado_conservacion;
-  new bootstrap.Modal(document.getElementById('modalEditar')).show();
-}
-const formEdit = document.getElementById('form-editar');
-formEdit.addEventListener('submit', async e => {
-  e.preventDefault();
-  const data = new FormData(formEdit);
-  const id = formEdit._id.value;
-  const res = await fetch(`${baseURL}/especies/${id}`, { method: 'PUT', body: data });
-  if (res.ok) {
-    bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
-    cargarPeces();
-  } else {
-    alert('Error al actualizar pez');
+app.put('/especies/:id', upload.single('imagen'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const update = { ...req.body };
+    if (req.file) update.imagen_url = req.file.path;
+    const mod = await Especie.findByIdAndUpdate(id, update, { new: true });
+    res.json(mod);
+  } catch (err) {
+    console.error('Error PUT /especies:', err);
+    res.status(500).json({ error: 'Error al actualizar especie' });
   }
 });
 
-// Eliminar Pez
-function abrirEliminar(id, nombre) {
-  document.getElementById('idEliminar').value = id;
-  document.getElementById('pezAEliminar').textContent = nombre;
-  new bootstrap.Modal(document.getElementById('modalEliminar')).show();
-}
-function eliminarPezConfirmado() {
-  const id = document.getElementById('idEliminar').value;
-  fetch(`${baseURL}/especies/${id}`, { method: 'DELETE' })
-    .then(() => cargarPeces());
-}
+app.delete('/especies/:id', async (req, res) => {
+  try {
+    await Especie.findByIdAndDelete(req.params.id);
+    res.sendStatus(204);
+  } catch (err) {
+    console.error('Error DELETE /especies:', err);
+    res.status(500).json({ error: 'Error al eliminar especie' });
+  }
+});
 
-// Inicio
-window.onload = cargarPeces;
-</script>
-</body>
-</html>
+// --- API: Usuarios / Login ---
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const user = await Usuario.findOne({ username, password });
+    if (!user) return res.status(401).json({ error: 'Credenciales incorrectas' });
+    res.json({ rol: user.role });
+  } catch (err) {
+    console.error('Error POST /login:', err);
+    res.status(500).json({ error: 'Error interno de autenticación' });
+  }
+});
+
+// --- Catch-all: fallback to front-end ---
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'peces.html'));
+});
+
+// --- Iniciar servidor ---
+app.listen(PORT, () => console.log(`Servidor escuchando en http://localhost:${PORT}`));
+
 
