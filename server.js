@@ -27,8 +27,10 @@ if (!uri) {
 }
 
 mongoose.connect(uri, {
-  dbName: 'pecesPeruanos' // o el nombre exacto de tu base
+  useNewUrlParser: true,
+  useUnifiedTopology: true
 })
+
 .then(() => console.log('✅ Conectado a MongoDB Atlas'))
 .catch(err => console.error('❌ Error al conectar a MongoDB:', err));
 
