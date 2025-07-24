@@ -1,6 +1,7 @@
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const express = require('express');
 const cors = require('cors');
@@ -179,12 +180,30 @@ app.delete('/especies/:id', async (req, res) => {
   }
 });
 
-// --- API: Login ---
+// --- LOGIN: con desencriptado asimétrico ---
+const privateKey = fs.readFileSync(path.join(__dirname, 'keys', 'private.pem'), 'utf8');
+
 app.post('/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { encryptedUser, encryptedPass } = req.body;
+
+    if (!encryptedUser || !encryptedPass) {
+      return res.status(400).json({ error: 'Faltan datos cifrados' });
+    }
+
+    const username = crypto.privateDecrypt(
+      { key: privateKey, padding: crypto.constants.RSA_PKCS1_PADDING },
+      Buffer.from(encryptedUser, 'base64')
+    ).toString('utf8');
+
+    const password = crypto.privateDecrypt(
+      { key: privateKey, padding: crypto.constants.RSA_PKCS1_PADDING },
+      Buffer.from(encryptedPass, 'base64')
+    ).toString('utf8');
+
     const user = await Usuario.findOne({ username, password });
     if (!user) return res.status(401).json({ error: 'Credenciales inválidas' });
+
     res.json({ rol: user.role });
   } catch (err) {
     console.error('POST /login error:', err);
@@ -194,4 +213,5 @@ app.post('/login', async (req, res) => {
 
 // --- INICIAR SERVIDOR ---
 app.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
+
 

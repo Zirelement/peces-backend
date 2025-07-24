@@ -8,11 +8,25 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <style>
-    .card:hover { transform: scale(1.03); transition: all 0.3s ease-in-out; box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
-    .card-img-top { height: 220px; object-fit: contain; }
-    .navbar-brand { font-weight: bold; }
-    .carousel img { max-height: 450px; object-fit: cover; }
-    body { scroll-behavior: smooth; }
+    .card:hover {
+      transform: scale(1.03);
+      transition: all 0.3s ease-in-out;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+    .card-img-top {
+      height: 220px;
+      object-fit: contain;
+    }
+    .navbar-brand {
+      font-weight: bold;
+    }
+    .carousel img {
+      max-height: 450px;
+      object-fit: cover;
+    }
+    body {
+      scroll-behavior: smooth;
+    }
   </style>
 </head>
 <body class="bg-light">
@@ -85,7 +99,7 @@
   <!-- GALERÍA DE PECES -->
   <div id="galeria" class="container mt-5">
     <div class="row" id="contenedor-peces">
-      <!-- Las tarjetas de peces se insertan dinámicamente con JS -->
+      <!-- Tarjetas de peces se insertan aquí dinámicamente -->
     </div>
   </div>
 
@@ -119,49 +133,50 @@
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Lógica Frontend -->
+  <!-- JS dinámico -->
   <script>
     const baseURL = location.origin;
 
     async function cargarPeces() {
       try {
-        const response = await fetch(`${baseURL}/especies`);
-        const data = await response.json();
+        const res = await fetch(`${baseURL}/especies`);
+        const data = await res.json();
         const contenedor = document.getElementById("contenedor-peces");
 
-        if (data.length === 0) {
+        if (!data.length) {
           contenedor.innerHTML = `<p class="text-muted text-center">No hay peces registrados aún.</p>`;
           return;
         }
 
-        data.forEach((pez) => {
-          const nombreArchivo = pez.nombre_comun.toLowerCase().replace(/\s+/g, '') + ".html";
-          const ruta = `peces/${nombreArchivo}`;
-          const imagen = pez.imagen_url?.startsWith('http')
-            ? pez.imagen_url
-            : `${baseURL}/images/${pez.imagen_url}`;
+        data
+          .filter(p => p.enabled !== false) // Mostrar solo habilitados
+          .forEach(pez => {
+            const nombreArchivo = pez.nombre_comun.toLowerCase().replace(/\s+/g, '-') + ".html";
+            const imagen = pez.imagen_url?.startsWith('http')
+              ? pez.imagen_url
+              : `${baseURL}/images/${pez.imagen_url}`;
 
-          const tarjeta = `
-            <div class="col-md-4 mb-4">
-              <a href="${ruta}" class="text-decoration-none text-dark">
-                <div class="card h-100 shadow-sm">
-                  <img src="${imagen}" class="card-img-top" alt="${pez.nombre_comun}">
-                  <div class="card-body">
-                    <h5 class="card-title">${pez.nombre_comun}</h5>
-                    <p class="card-text">
-                      <strong>Nombre científico:</strong> ${pez.nombre_cientifico}<br>
-                      <strong>Familia:</strong> ${pez.familia}<br>
-                      <strong>Alimentación:</strong> ${pez.alimentacion || 'Desconocida'}<br>
-                      <strong>Conservación:</strong> ${pez.estado_conservacion || 'No especificado'}
-                    </p>
+            const tarjeta = `
+              <div class="col-md-4 mb-4">
+                <a href="peces/${nombreArchivo}" class="text-decoration-none text-dark">
+                  <div class="card h-100 shadow-sm">
+                    <img src="${imagen}" class="card-img-top" alt="${pez.nombre_comun}">
+                    <div class="card-body">
+                      <h5 class="card-title">${pez.nombre_comun}</h5>
+                      <p class="card-text">
+                        <strong>Nombre científico:</strong> ${pez.nombre_cientifico}<br>
+                        <strong>Familia:</strong> ${pez.familia}<br>
+                        <strong>Alimentación:</strong> ${pez.alimentacion || 'Desconocida'}<br>
+                        <strong>Conservación:</strong> ${pez.estado_conservacion || 'No especificado'}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </a>
-            </div>`;
-          contenedor.innerHTML += tarjeta;
-        });
-      } catch (error) {
-        console.error("Error cargando peces:", error);
+                </a>
+              </div>`;
+            contenedor.innerHTML += tarjeta;
+          });
+      } catch (err) {
+        console.error("Error al cargar peces:", err);
         document.getElementById("contenedor-peces").innerHTML =
           `<p class="text-danger">Error al cargar los datos. Intenta más tarde.</p>`;
       }
