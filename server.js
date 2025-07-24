@@ -1,11 +1,11 @@
 // ==== server.js ====
 require('dotenv').config();
-const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
+const fs = require('fs');
 const { v2: cloudinary } = require('cloudinary');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const mongoose = require('mongoose');
@@ -24,7 +24,7 @@ if (!uri) {
   console.error('❌ MONGODB_URI no está definida.');
   process.exit(1);
 }
-mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(uri)
   .then(() => console.log('✅ Conectado a MongoDB Atlas'))
   .catch(err => console.error('❌ Error al conectar:', err));
 
@@ -46,28 +46,28 @@ const usuarioSchema = new mongoose.Schema({
 });
 const Usuario = mongoose.model('Usuario', usuarioSchema);
 
-// --- CLOUDINARY ---
+// --- CLOUDINARY CONFIG ---
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
+  api_key:    process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true,
+  secure:     true,
 });
 
-// --- MULTER ---
+// --- MULTER + CLOUDINARY STORAGE ---
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: 'peces_peruanos',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    allowed_formats: ['jpg','jpeg','png','webp'],
     transformation: [{ width: 800, crop: 'limit' }],
   }
 });
 const upload = multer({ storage });
 
 // --- RUTAS PRINCIPALES ---
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public/peces.html')));
-app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/admin.html')));
+app.get('/',    (req, res) => res.sendFile(path.join(__dirname, 'public/peces.html')));
+app.get('/admin',(req, res) => res.sendFile(path.join(__dirname, 'public/admin.html')));
 
 // --- CRUD: Especies ---
 app.get('/especies', async (req, res) => {
@@ -82,23 +82,23 @@ app.get('/especies', async (req, res) => {
 app.post('/especies', upload.single('imagen'), async (req, res) => {
   try {
     const nueva = new Especie({
-      nombre_comun: req.body.nombre_comun,
-      nombre_cientifico: req.body.nombre_cientifico,
-      familia: req.body.familia,
-      alimentacion: req.body.alimentacion || 'No especificada',
-      estado_conservacion: req.body.estado_conservacion || 'No especificado',
-      imagen_url: req.file?.path || ''
+      nombre_comun:       req.body.nombre_comun,
+      nombre_cientifico:  req.body.nombre_cientifico,
+      familia:            req.body.familia,
+      alimentacion:       req.body.alimentacion || 'No especificada',
+      estado_conservacion:req.body.estado_conservacion || 'No especificado',
+      imagen_url:         req.file?.path || ''
     });
-
     await nueva.save();
 
-    const templatePath = path.join(__dirname, 'templates', 'fichaTemplate.html');
-    if (fs.existsSync(templatePath)) {
-      const pecesDir = path.join(__dirname, 'public', 'peces');
-      if (!fs.existsSync(pecesDir)) fs.mkdirSync(pecesDir, { recursive: true });
+    // Genera ficha HTML
+    const tpl = path.join(__dirname, 'templates', 'fichaTemplate.html');
+    if (fs.existsSync(tpl)) {
+      const outDir = path.join(__dirname, 'public', 'peces');
+      if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
-      let plantilla = fs.readFileSync(templatePath, 'utf8');
-      plantilla = plantilla
+      let html = fs.readFileSync(tpl, 'utf8');
+      html = html
         .replace(/{{NOMBRE_COMUN}}/g, nueva.nombre_comun)
         .replace(/{{NOMBRE_CIENTIFICO}}/g, nueva.nombre_cientifico)
         .replace(/{{FAMILIA}}/g, nueva.familia)
@@ -106,8 +106,8 @@ app.post('/especies', upload.single('imagen'), async (req, res) => {
         .replace(/{{ESTADO_CONSERVACION}}/g, nueva.estado_conservacion)
         .replace(/{{IMAGEN_URL}}/g, nueva.imagen_url);
 
-      const nombreArchivo = nueva.nombre_comun.toLowerCase().replace(/\s+/g, '-') + '.html';
-      fs.writeFileSync(path.join(pecesDir, nombreArchivo), plantilla);
+      const fileName = nueva.nombre_comun.toLowerCase().replace(/\s+/g, '-') + '.html';
+      fs.writeFileSync(path.join(outDir, fileName), html);
     }
 
     res.status(201).json(nueva);
@@ -119,11 +119,11 @@ app.post('/especies', upload.single('imagen'), async (req, res) => {
 app.put('/especies/:id', upload.single('imagen'), async (req, res) => {
   try {
     const updateData = {
-      nombre_comun: req.body.nombre_comun,
-      nombre_cientifico: req.body.nombre_cientifico,
-      familia: req.body.familia,
-      alimentacion: req.body.alimentacion,
-      estado_conservacion: req.body.estado_conservacion
+      nombre_comun:       req.body.nombre_comun,
+      nombre_cientifico:  req.body.nombre_cientifico,
+      familia:            req.body.familia,
+      alimentacion:       req.body.alimentacion,
+      estado_conservacion:req.body.estado_conservacion
     };
     if (req.file) updateData.imagen_url = req.file.path;
     await Especie.findByIdAndUpdate(req.params.id, updateData);
@@ -137,23 +137,35 @@ app.delete('/especies/:id', async (req, res) => {
   try {
     const especie = await Especie.findByIdAndDelete(req.params.id);
     if (!especie) return res.status(404).json({ error: 'No encontrada' });
-    const rutaHTML = path.join(__dirname, 'public', 'peces', especie.nombre_comun.toLowerCase().replace(/\s+/g, '-') + '.html');
-    if (fs.existsSync(rutaHTML)) fs.unlinkSync(rutaHTML);
+
+    const htmlPath = path.join(
+      __dirname, 'public', 'peces',
+      especie.nombre_comun.toLowerCase().replace(/\s+/g, '-') + '.html'
+    );
+    if (fs.existsSync(htmlPath)) fs.unlinkSync(htmlPath);
+
     res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: 'No se pudo eliminar la especie' });
   }
 });
 
-// --- LOGIN CON DESENCRIPTADO ---
+// --- LOGIN CON DESENCRIPTADO RSA ---
+// Leemos PRIVATE_KEY en base64 desde env y lo decodificamos a UTF8
 const privateKey = Buffer.from(process.env.PRIVATE_KEY, 'base64').toString('utf8');
+
 app.post('/login', async (req, res) => {
   try {
     const { encryptedUser, encryptedPass } = req.body;
+    if (!encryptedUser || !encryptedPass) {
+      return res.status(400).json({ error: 'Faltan datos cifrados' });
+    }
+
     const username = crypto.privateDecrypt(
       { key: privateKey, padding: crypto.constants.RSA_PKCS1_PADDING },
       Buffer.from(encryptedUser, 'base64')
     ).toString('utf8');
+
     const password = crypto.privateDecrypt(
       { key: privateKey, padding: crypto.constants.RSA_PKCS1_PADDING },
       Buffer.from(encryptedPass, 'base64')
@@ -161,11 +173,14 @@ app.post('/login', async (req, res) => {
 
     const user = await Usuario.findOne({ username, password });
     if (!user) return res.status(401).json({ error: 'Credenciales inválidas' });
+
     res.json({ rol: user.role });
   } catch (err) {
+    console.error('Login error:', err);
     res.status(500).json({ error: 'Error de autenticación' });
   }
 });
 
-// --- SERVIDOR ---
+// --- INICIAR SERVIDOR ---
 app.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
+
