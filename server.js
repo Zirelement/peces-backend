@@ -146,7 +146,7 @@ app.delete('/especies/:id', async (req, res) => {
 });
 
 // --- LOGIN CON DESENCRIPTADO ---
-const privateKey = fs.readFileSync(path.join(__dirname, 'keys', 'private.pem'), 'utf8');
+const privateKey = Buffer.from(process.env.PRIVATE_KEY, 'base64').toString('utf8');
 app.post('/login', async (req, res) => {
   try {
     const { encryptedUser, encryptedPass } = req.body;
