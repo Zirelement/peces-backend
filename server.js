@@ -15,6 +15,7 @@ const PORT = process.env.PORT || 3000;
 // --- MIDDLEWARES ---
 app.use(cors());
 app.use(express.json());
+// Sirve archivos estáticos de la carpeta "public"
 app.use(express.static(path.join(__dirname, 'public')));
 
 // --- MONGODB ---
@@ -43,8 +44,8 @@ const usuarioSchema = new mongoose.Schema({
   password: String,
   role: String,
 });
-// Ajusta el tercer parámetro al nombre real de tu colección de usuarios en MongoDB Atlas
-const Usuario = mongoose.model('Usuario', usuarioSchema, 'usuario');
+// Usa el nombre exacto de tu colección en Atlas: 'usuarios'
+const Usuario = mongoose.model('Usuario', usuarioSchema, 'usuarios');
 
 // --- CLOUDINARY ---
 cloudinary.config({
@@ -167,7 +168,5 @@ app.post('/login', async (req, res) => {
 
 // --- SERVIDOR ---
 app.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
-
-
 
 
