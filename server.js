@@ -28,7 +28,6 @@ mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
   .catch(err => console.error('❌ Error al conectar:', err));
 
 // --- MODELOS ---
-// Especies (sin cambios)
 const especieSchema = new mongoose.Schema({
   nombre_comun: String,
   nombre_cientifico: String,
@@ -39,13 +38,13 @@ const especieSchema = new mongoose.Schema({
 });
 const Especie = mongoose.model('Especie', especieSchema);
 
-// Usuarios (asegura la colección 'usuarios')
 const usuarioSchema = new mongoose.Schema({
   username: String,
   password: String,
   role: String,
-}, { collection: 'usuarios' });
-const Usuario = mongoose.model('Usuario', usuarioSchema);
+});
+// Ajusta el tercer parámetro al nombre real de tu colección de usuarios en MongoDB Atlas
+const Usuario = mongoose.model('Usuario', usuarioSchema, 'usuario');
 
 // --- CLOUDINARY ---
 cloudinary.config({
@@ -71,9 +70,82 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public/peces.html'
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/admin.html')));
 
 // --- CRUD: Especies ---
-// ... (misma implementación)
+app.get('/especies', async (req, res) => {
+  try {
+    const especies = await Especie.find().sort({ nombre_comun: 1 });
+    res.json(especies);
+  } catch (err) {
+    res.status(500).json({ error: 'Error interno' });
+  }
+});
 
-// --- LOGIN (solo texto plano) ---
+app.post('/especies', upload.single('imagen'), async (req, res) => {
+  try {
+    const nueva = new Especie({
+      nombre_comun: req.body.nombre_comun,
+      nombre_cientifico: req.body.nombre_cientifico,
+      familia: req.body.familia,
+      alimentacion: req.body.alimentacion || 'No especificada',
+      estado_conservacion: req.body.estado_conservacion || 'No especificado',
+      imagen_url: req.file?.path || ''
+    });
+    await nueva.save();
+
+    // Genera la ficha HTML si existe la plantilla
+    const templatePath = path.join(__dirname, 'templates', 'fichaTemplate.html');
+    if (fs.existsSync(templatePath)) {
+      const pecesDir = path.join(__dirname, 'public', 'peces');
+      if (!fs.existsSync(pecesDir)) fs.mkdirSync(pecesDir, { recursive: true });
+
+      let plantilla = fs.readFileSync(templatePath, 'utf8');
+      plantilla = plantilla
+        .replace(/{{NOMBRE_COMUN}}/g, nueva.nombre_comun)
+        .replace(/{{NOMBRE_CIENTIFICO}}/g, nueva.nombre_cientifico)
+        .replace(/{{FAMILIA}}/g, nueva.familia)
+        .replace(/{{ALIMENTACION}}/g, nueva.alimentacion)
+        .replace(/{{ESTADO_CONSERVACION}}/g, nueva.estado_conservacion)
+        .replace(/{{IMAGEN_URL}}/g, nueva.imagen_url);
+
+      const nombreArchivo = nueva.nombre_comun.toLowerCase().replace(/\s+/g, '-') + '.html';
+      fs.writeFileSync(path.join(pecesDir, nombreArchivo), plantilla);
+    }
+
+    res.status(201).json(nueva);
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudo agregar especie' });
+  }
+});
+
+app.put('/especies/:id', upload.single('imagen'), async (req, res) => {
+  try {
+    const updateData = {
+      nombre_comun: req.body.nombre_comun,
+      nombre_cientifico: req.body.nombre_cientifico,
+      familia: req.body.familia,
+      alimentacion: req.body.alimentacion,
+      estado_conservacion: req.body.estado_conservacion
+    };
+    if (req.file) updateData.imagen_url = req.file.path;
+    await Especie.findByIdAndUpdate(req.params.id, updateData);
+    res.json({ message: 'Especie actualizada' });
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudo actualizar la especie' });
+  }
+});
+
+app.delete('/especies/:id', async (req, res) => {
+  try {
+    const especie = await Especie.findByIdAndDelete(req.params.id);
+    if (!especie) return res.status(404).json({ error: 'No encontrada' });
+    const rutaHTML = path.join(__dirname, 'public', 'peces', especie.nombre_comun.toLowerCase().replace(/\s+/g, '-') + '.html');
+    if (fs.existsSync(rutaHTML)) fs.unlinkSync(rutaHTML);
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudo eliminar la especie' });
+  }
+});
+
+// --- LOGIN (texto plano) ---
 app.post('/login', async (req, res) => {
   console.log('🔐 Intento de login:', req.body);
   const { username, password } = req.body;
@@ -86,14 +158,16 @@ app.post('/login', async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
-    return res.json({ rol: user.role });
+    res.json({ rol: user.role });
   } catch (err) {
     console.error('❌ Error en autenticación:', err);
-    return res.status(500).json({ error: 'Error de autenticación' });
+    res.status(500).json({ error: 'Error de autenticación' });
   }
 });
 
 // --- SERVIDOR ---
 app.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
+
+
 
 
