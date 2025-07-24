@@ -1,13 +1,14 @@
+// ==== server.js ====
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,22 +18,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- CONEXIÓN A MONGODB ---
-const mongoose = require('mongoose');
-
+// --- MONGODB ---
 const uri = process.env.MONGODB_URI;
-
 if (!uri) {
-  console.error('❌ MONGODB_URI no está definida. Asegúrate de configurar la variable en Heroku.');
+  console.error('❌ MONGODB_URI no está definida.');
   process.exit(1);
 }
-
-mongoose.connect(uri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('✅ Conectado a MongoDB Atlas'))
-.catch(err => console.error('❌ Error al conectar a MongoDB:', err));
+mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('✅ Conectado a MongoDB Atlas'))
+  .catch(err => console.error('❌ Error al conectar:', err));
 
 // --- MODELOS ---
 const especieSchema = new mongoose.Schema({
@@ -52,7 +46,7 @@ const usuarioSchema = new mongoose.Schema({
 });
 const Usuario = mongoose.model('Usuario', usuarioSchema);
 
-// --- CLOUDINARY CONFIG ---
+// --- CLOUDINARY ---
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -60,7 +54,7 @@ cloudinary.config({
   secure: true,
 });
 
-// --- MULTER + CLOUDINARY STORAGE ---
+// --- MULTER ---
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
@@ -75,13 +69,12 @@ const upload = multer({ storage });
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public/peces.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/admin.html')));
 
-// --- API: Especies ---
+// --- CRUD: Especies ---
 app.get('/especies', async (req, res) => {
   try {
     const especies = await Especie.find().sort({ nombre_comun: 1 });
     res.json(especies);
   } catch (err) {
-    console.error('GET /especies error:', err);
     res.status(500).json({ error: 'Error interno' });
   }
 });
@@ -99,43 +92,32 @@ app.post('/especies', upload.single('imagen'), async (req, res) => {
 
     await nueva.save();
 
-    // --- GENERAR FICHA HTML DESDE PLANTILLA ---
     const templatePath = path.join(__dirname, 'templates', 'fichaTemplate.html');
-    if (!fs.existsSync(templatePath)) {
-      console.warn('⚠️ Plantilla fichaTemplate.html no encontrada.');
-    } else {
+    if (fs.existsSync(templatePath)) {
       const pecesDir = path.join(__dirname, 'public', 'peces');
-      if (!fs.existsSync(pecesDir)) {
-        fs.mkdirSync(pecesDir, { recursive: true });
-      }
+      if (!fs.existsSync(pecesDir)) fs.mkdirSync(pecesDir, { recursive: true });
 
       let plantilla = fs.readFileSync(templatePath, 'utf8');
-
       plantilla = plantilla
-        .replace(/{{NOMBRE_COMUN}}/g, nueva.nombre_comun || 'No especificado')
-        .replace(/{{NOMBRE_CIENTIFICO}}/g, nueva.nombre_cientifico || 'No especificado')
-        .replace(/{{FAMILIA}}/g, nueva.familia || 'No especificada')
-        .replace(/{{ALIMENTACION}}/g, nueva.alimentacion || 'No especificada')
-        .replace(/{{ESTADO_CONSERVACION}}/g, nueva.estado_conservacion || 'No especificado')
-        .replace(/{{IMAGEN_URL}}/g, nueva.imagen_url || '');
+        .replace(/{{NOMBRE_COMUN}}/g, nueva.nombre_comun)
+        .replace(/{{NOMBRE_CIENTIFICO}}/g, nueva.nombre_cientifico)
+        .replace(/{{FAMILIA}}/g, nueva.familia)
+        .replace(/{{ALIMENTACION}}/g, nueva.alimentacion)
+        .replace(/{{ESTADO_CONSERVACION}}/g, nueva.estado_conservacion)
+        .replace(/{{IMAGEN_URL}}/g, nueva.imagen_url);
 
       const nombreArchivo = nueva.nombre_comun.toLowerCase().replace(/\s+/g, '-') + '.html';
-      const outputPath = path.join(pecesDir, nombreArchivo);
-      fs.writeFileSync(outputPath, plantilla);
-      console.log(`✅ Ficha creada: /peces/${nombreArchivo}`);
+      fs.writeFileSync(path.join(pecesDir, nombreArchivo), plantilla);
     }
 
     res.status(201).json(nueva);
   } catch (err) {
-    console.error('POST /especies error:', err);
     res.status(500).json({ error: 'No se pudo agregar especie' });
   }
 });
 
-// --- PUT: Actualizar especie ---
 app.put('/especies/:id', upload.single('imagen'), async (req, res) => {
   try {
-    const { id } = req.params;
     const updateData = {
       nombre_comun: req.body.nombre_comun,
       nombre_cientifico: req.body.nombre_cientifico,
@@ -143,59 +125,35 @@ app.put('/especies/:id', upload.single('imagen'), async (req, res) => {
       alimentacion: req.body.alimentacion,
       estado_conservacion: req.body.estado_conservacion
     };
-
-    if (req.file) {
-      const resultado = await cloudinary.uploader.upload(req.file.path);
-      updateData.imagen_url = resultado.secure_url;
-    }
-
-    await Especie.findByIdAndUpdate(id, updateData);
+    if (req.file) updateData.imagen_url = req.file.path;
+    await Especie.findByIdAndUpdate(req.params.id, updateData);
     res.json({ message: 'Especie actualizada' });
   } catch (err) {
-    console.error('PUT /especies/:id error:', err);
     res.status(500).json({ error: 'No se pudo actualizar la especie' });
   }
 });
 
-// --- DELETE: Eliminar especie y su HTML ---
 app.delete('/especies/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const especie = await Especie.findByIdAndDelete(id);
+    const especie = await Especie.findByIdAndDelete(req.params.id);
     if (!especie) return res.status(404).json({ error: 'No encontrada' });
-
-    const nombreArchivo = especie.nombre_comun.toLowerCase().replace(/\s+/g, '-') + '.html';
-    const rutaHTML = path.join(__dirname, 'public', 'peces', nombreArchivo);
-
-    if (fs.existsSync(rutaHTML)) {
-      fs.unlinkSync(rutaHTML);
-      console.log(`🗑️ Ficha eliminada: /peces/${nombreArchivo}`);
-    }
-
+    const rutaHTML = path.join(__dirname, 'public', 'peces', especie.nombre_comun.toLowerCase().replace(/\s+/g, '-') + '.html');
+    if (fs.existsSync(rutaHTML)) fs.unlinkSync(rutaHTML);
     res.status(204).send();
   } catch (err) {
-    console.error('DELETE /especies/:id error:', err);
     res.status(500).json({ error: 'No se pudo eliminar la especie' });
   }
 });
 
-// --- LOGIN: con desencriptado asimétrico ---
+// --- LOGIN CON DESENCRIPTADO ---
 const privateKey = fs.readFileSync(path.join(__dirname, 'keys', 'private.pem'), 'utf8');
-
 app.post('/login', async (req, res) => {
   try {
     const { encryptedUser, encryptedPass } = req.body;
-
-    if (!encryptedUser || !encryptedPass) {
-      return res.status(400).json({ error: 'Faltan datos cifrados' });
-    }
-
     const username = crypto.privateDecrypt(
       { key: privateKey, padding: crypto.constants.RSA_PKCS1_PADDING },
       Buffer.from(encryptedUser, 'base64')
     ).toString('utf8');
-
     const password = crypto.privateDecrypt(
       { key: privateKey, padding: crypto.constants.RSA_PKCS1_PADDING },
       Buffer.from(encryptedPass, 'base64')
@@ -203,15 +161,11 @@ app.post('/login', async (req, res) => {
 
     const user = await Usuario.findOne({ username, password });
     if (!user) return res.status(401).json({ error: 'Credenciales inválidas' });
-
     res.json({ rol: user.role });
   } catch (err) {
-    console.error('POST /login error:', err);
     res.status(500).json({ error: 'Error de autenticación' });
   }
 });
 
-// --- INICIAR SERVIDOR ---
+// --- SERVIDOR ---
 app.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
-
-
