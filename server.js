@@ -135,6 +135,10 @@ app.delete('/especies/:id', async (req, res) => {
     res.status(500).json({ error: 'Error interno' });
   }
 });
+// Al final, antes de app.listen(...)
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'peces.html'));
+});
 
 // Iniciar servidor
 app.listen(PORT, () => {
