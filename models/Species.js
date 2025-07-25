@@ -8,6 +8,8 @@ const speciesSchema = new mongoose.Schema({
   estado_conservacion: { type: String },
   imagen_url:          { type: String },
   enabled:             { type: Boolean, default: true }
+}, {
+  collection: 'especies'  // coincide con tu colección en MongoDB Atlas
 });
 
 module.exports = mongoose.model('Species', speciesSchema);
