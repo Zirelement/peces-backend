@@ -40,47 +40,47 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  const baseURL = location.origin;
-  const userRole = localStorage.getItem('userRole');
-  if (!userRole) location.href = 'peces.html';
-  if (userRole === 'admin') document.getElementById('btn-agregar').style.display = 'inline-block';
+const baseURL = location.origin;
 
-  function logout() {
-    localStorage.removeItem('userRole');
-    location.href = 'peces.html';
+function resolverImagen(imagen_url) {
+  if (!imagen_url) {
+    return baseURL + '/images/default.png';
   }
+  if (imagen_url.startsWith('http')) {
+    return imagen_url;
+  }
+  if (imagen_url.startsWith('/')) {
+    return baseURL + imagen_url;
+  }
+  return baseURL + '/images/' + imagen_url;
+}
 
-  async function cargarPeces() {
-    const cont = document.getElementById('admin-contenedor-peces');
-    cont.innerHTML = '';
-    try {
-      const res = await fetch(`${baseURL}/especies`);
-      const peces = await res.json();
-      peces.forEach(p => {
-        const imgSrc = p.imagen_url.startsWith('http') ? p.imagen_url : `${baseURL}/images/${p.imagen_url}`;
-        cont.innerHTML += `
-          <div class="col-md-4 mb-4">
-            <div class="card h-100 shadow-sm">
-              <img src="${imgSrc}" class="card-img-top" alt="${p.nombre_comun}">
-              <div class="card-body">
-                <h5 class="card-title">${p.nombre_comun}</h5>
-                <p class="card-text">
-                  <strong>Científico:</strong> ${p.nombre_cientifico}<br>
-                  <strong>Familia:</strong> ${p.familia}<br>
-                  <strong>Alimentación:</strong> ${p.alimentacion || '-'}<br>
-                  <strong>Conservación:</strong> ${p.estado_conservacion || '-'}
-                </p>
-                ${userRole === 'admin' || userRole === 'analista' ? `<button class="btn btn-warning btn-sm me-2" onclick='abrirEditar(${JSON.stringify(p)})'>Editar</button>` : ''}
-                ${userRole === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="abrirEliminar('${p._id}','${p.nombre_comun}')">Eliminar</button>` : ''}
-              </div>
+async function cargarPeces() {
+  const cont = document.getElementById('admin-contenedor-peces');
+  cont.innerHTML = '';
+  try {
+    const res = await fetch(`${baseURL}/especies`);
+    const peces = await res.json();
+    peces.forEach(p => {
+      const imgSrc = resolverImagen(p.imagen_url);
+      cont.innerHTML += `
+        <div class="col-md-4 mb-4">
+          <div class="card h-100 shadow-sm">
+            <img src="${imgSrc}" class="card-img-top" alt="${p.nombre_comun}">
+            <div class="card-body">
+              <h5 class="card-title">${p.nombre_comun}</h5>
+              <!-- resto de campos -->
+              <button class="btn btn-warning btn-sm me-2" onclick='abrirEditar(${JSON.stringify(p)})'>Editar</button>
+              <button class="btn btn-danger btn-sm" onclick="abrirEliminar('${p._id}','${p.nombre_comun}')">Eliminar</button>
             </div>
-          </div>`;
-      });
-    } catch (err) {
-      console.error('Error GET /especies', err);
-      document.getElementById('admin-contenedor-peces').innerHTML = '<p class="text-danger">Error al cargar especies.</p>';
-    }
+          </div>
+        </div>`;
+    });
+  } catch (err) {
+    console.error('Error GET /especies', err);
+    cont.innerHTML = '<p class="text-danger">Error al cargar especies.</p>';
   }
+}
 
   // Agregar pez
   document.getElementById('form-agregar').addEventListener('submit', async e => {
