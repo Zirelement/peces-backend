@@ -1,4 +1,3 @@
-<!-- ARCHIVO: peces.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -135,46 +134,33 @@
 
   <!-- JS dinámico -->
   <script>
-  const baseURL = location.origin;
+    const baseURL = location.origin;
 
-  // --- Resuelve siempre a una URL válida ---
-  function resolverImagen(imagen_url) {
-    if (!imagen_url) {
-      return baseURL + '/images/default.png';  // Pon tu default si quieres
+    function resolverImagen(imagen_url) {
+      if (!imagen_url) return `${baseURL}/images/default.png`;
+      if (imagen_url.startsWith('http')) return imagen_url;
+      if (imagen_url.startsWith('/')) return baseURL + imagen_url;
+      return `${baseURL}/images/${imagen_url}`;
     }
-    if (imagen_url.startsWith('http')) {
-      return imagen_url;
-    }
-    if (imagen_url.startsWith('/')) {
-      return baseURL + imagen_url;
-    }
-    return baseURL + '/images/' + imagen_url;
-  }
 
-  async function cargarPeces() {
-    try {
-      const res = await fetch(`${baseURL}/especies`);
-      const data = await res.json();
-      const contenedor = document.getElementById("contenedor-peces");
-      contenedor.innerHTML = '';
-
-      if (!data.length) {
-        contenedor.innerHTML = `<p class="text-muted text-center">No hay peces registrados aún.</p>`;
-        return;
-      }
-
-      data
-        .filter(p => p.enabled !== false)
-        .forEach(pez => {
-          const nombreArchivo = pez.nombre_comun
-            .toLowerCase().replace(/\s+/g, '-') + ".html";
-          const imagen = resolverImagen(pez.imagen_url);
-
-          contenedor.innerHTML += `
+    async function cargarPeces() {
+      try {
+        const res = await fetch(`${baseURL}/especies`);
+        const data = await res.json();
+        const cont = document.getElementById("contenedor-peces");
+        cont.innerHTML = '';
+        if (!data.length) {
+          cont.innerHTML = `<p class="text-muted text-center">No hay peces registrados aún.</p>`;
+          return;
+        }
+        data.filter(p => p.enabled !== false).forEach(pez => {
+          const nombreArchivo = pez.nombre_comun.toLowerCase().replace(/\s+/g, '-') + ".html";
+          const img = resolverImagen(pez.imagen_url);
+          cont.innerHTML += `
             <div class="col-md-4 mb-4">
               <a href="peces/${nombreArchivo}" class="text-decoration-none text-dark">
                 <div class="card h-100 shadow-sm">
-                  <img src="${imagen}" class="card-img-top" alt="${pez.nombre_comun}">
+                  <img src="${img}" class="card-img-top" alt="${pez.nombre_comun}">
                   <div class="card-body">
                     <h5 class="card-title">${pez.nombre_comun}</h5>
                     <p class="card-text">
@@ -188,17 +174,41 @@
               </a>
             </div>`;
         });
-    } catch (err) {
-      console.error("Error al cargar peces:", err);
-      document.getElementById("contenedor-peces").innerHTML =
-        `<p class="text-danger">Error al cargar los datos. Intenta más tarde.</p>`;
+      } catch (err) {
+        console.error("Error al cargar peces:", err);
+        document.getElementById("contenedor-peces").innerHTML =
+          `<p class="text-danger">Error al cargar los datos. Intenta más tarde.</p>`;
+      }
     }
-  }
 
-  // ... login queda igual ...
-  window.onload = cargarPeces;
-</script>
+    // Login y redirección
+    document.getElementById('login-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      document.getElementById('login-msg').textContent = '';
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      try {
+        const res = await fetch(`${baseURL}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          return document.getElementById('login-msg').textContent = err.error;
+        }
+        const { rol } = await res.json();
+        if (rol === 'admin') {
+          window.location.href = `${baseURL}/admin.html`;
+        } else {
+          window.location.href = baseURL;
+        }
+      } catch {
+        document.getElementById('login-msg').textContent = 'Error de conexión';
+      }
+    });
 
+    window.onload = cargarPeces;
+  </script>
 </body>
 </html>
-

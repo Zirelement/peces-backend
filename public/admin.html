@@ -6,145 +6,197 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/jsencrypt/bin/jsencrypt.min.js"></script>
   <style>
     body { background-color: #f8f9fa; }
     .card-img-top { height: 200px; object-fit: contain; }
     .btn-custom { transition: all 0.3s ease-in-out; border-radius: 8px; }
-    .btn-custom:hover { transform: scale(1.05); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); }
+    .btn-custom:hover { transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
     .btn-success { background-color: #198754; border-color: #198754; }
-    .btn-danger { background-color: #dc3545; border-color: #dc3545; }
+    .btn-danger  { background-color: #dc3545; border-color: #dc3545; }
     .btn-warning { background-color: #ffc107; border-color: #ffc107; }
     .top-buttons { display: flex; justify-content: space-between; margin-bottom: 10px; }
   </style>
 </head>
 <body class="bg-light">
+  <div class="container mt-4">
+    <div class="top-buttons">
+      <a href="peces.html" class="btn btn-outline-primary btn-custom">← Regresar a galería</a>
+      <button onclick="window.location.href='peces.html'" class="btn btn-outline-danger btn-custom">Cerrar sesión</button>
+    </div>
+    <h1 class="text-center text-success mb-4">Panel de Administración 🛠️</h1>
+    <div class="text-center mb-3">
+      <button id="btn-agregar" class="btn btn-success btn-custom" data-bs-toggle="modal" data-bs-target="#modalAgregarPez">+ Agregar nuevo pez</button>
+    </div>
 
-<div class="container mt-4">
-  <div class="top-buttons">
-    <a href="peces.html" class="btn btn-outline-primary btn-custom">← Regresar a galería</a>
-    <button onclick="logout()" class="btn btn-outline-danger btn-custom">Cerrar sesión</button>
-  </div>
-
-  <h1 class="text-center text-success mb-4">Panel de Administración 🛠️</h1>
-  <div class="text-center mb-3">
-    <button id="btn-agregar" class="btn btn-success btn-custom" data-bs-toggle="modal" data-bs-target="#modalAgregarPez">+ Agregar nuevo pez</button>
-  </div>
-
-  <!-- Modales -->
-  <!-- (sin cambios en los modales) -->
-
-  <h3 class="text-success mt-4">Especies actuales</h3>
-  <div class="row" id="admin-contenedor-peces"></div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-const baseURL = location.origin;
-
-function resolverImagen(imagen_url) {
-  if (!imagen_url) {
-    return baseURL + '/images/default.png';
-  }
-  if (imagen_url.startsWith('http')) {
-    return imagen_url;
-  }
-  if (imagen_url.startsWith('/')) {
-    return baseURL + imagen_url;
-  }
-  return baseURL + '/images/' + imagen_url;
-}
-
-async function cargarPeces() {
-  const cont = document.getElementById('admin-contenedor-peces');
-  cont.innerHTML = '';
-  try {
-    const res = await fetch(`${baseURL}/especies`);
-    const peces = await res.json();
-    peces.forEach(p => {
-      const imgSrc = resolverImagen(p.imagen_url);
-      cont.innerHTML += `
-        <div class="col-md-4 mb-4">
-          <div class="card h-100 shadow-sm">
-            <img src="${imgSrc}" class="card-img-top" alt="${p.nombre_comun}">
-            <div class="card-body">
-              <h5 class="card-title">${p.nombre_comun}</h5>
-              <!-- resto de campos -->
-              <button class="btn btn-warning btn-sm me-2" onclick='abrirEditar(${JSON.stringify(p)})'>Editar</button>
-              <button class="btn btn-danger btn-sm" onclick="abrirEliminar('${p._id}','${p.nombre_comun}')">Eliminar</button>
+    <!-- Modal Agregar -->
+    <div class="modal fade" id="modalAgregarPez" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form id="form-agregar">
+            <div class="modal-header">
+              <h5 class="modal-title">Agregar Pez</h5>
+              <button class="btn-close" data-bs-dismiss="modal"></button>
             </div>
+            <div class="modal-body">
+              <input name="nombre_comun" class="form-control mb-2" placeholder="Nombre común" required>
+              <input name="nombre_cientifico" class="form-control mb-2" placeholder="Nombre científico" required>
+              <input name="familia" class="form-control mb-2" placeholder="Familia" required>
+              <input name="alimentacion" class="form-control mb-2" placeholder="Alimentación">
+              <input name="estado_conservacion" class="form-control mb-2" placeholder="Estado de conservación">
+              <input type="file" name="imagen" class="form-control mb-2" accept="image/*" required>
+              <p id="agregar-msg" class="text-danger"></p>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-success w-100" type="submit">Crear</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Editar -->
+    <div class="modal fade" id="modalEditar" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form id="form-editar">
+            <input type="hidden" name="_id">
+            <div class="modal-header">
+              <h5 class="modal-title">Editar Pez</h5>
+              <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <input name="nombre_comun" class="form-control mb-2" placeholder="Nombre común" required>
+              <input name="nombre_cientifico" class="form-control mb-2" placeholder="Nombre científico" required>
+              <input name="familia" class="form-control mb-2" placeholder="Familia" required>
+              <input name="alimentacion" class="form-control mb-2" placeholder="Alimentación">
+              <input name="estado_conservacion" class="form-control mb-2" placeholder="Estado de conservación">
+              <input type="file" name="imagen" class="form-control mb-2" accept="image/*">
+              <p id="editar-msg" class="text-danger"></p>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-warning w-100" type="submit">Actualizar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Eliminar -->
+    <div class="modal fade" id="modalEliminar" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Eliminar Pez</h5>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-        </div>`;
+          <div class="modal-body">
+            <input type="hidden" id="idEliminar">
+            <p>¿Seguro que deseas eliminar <strong id="pezAEliminar"></strong>?</p>
+          </div>
+          <div class="modal-footer">
+            <button id="confirmar-eliminar" class="btn btn-danger w-100">Eliminar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="text-success mt-4">Especies actuales</h3>
+    <div class="row" id="admin-contenedor-peces"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const baseURL = location.origin;
+
+    function resolverImagen(imagen_url) {
+      if (!imagen_url) return `${baseURL}/images/default.png`;
+      if (imagen_url.startsWith('http')) return imagen_url;
+      if (imagen_url.startsWith('/')) return baseURL + imagen_url;
+      return `${baseURL}/images/${imagen_url}`;
+    }
+
+    async function cargarPeces() {
+      const cont = document.getElementById('admin-contenedor-peces');
+      cont.innerHTML = '';
+      try {
+        const res = await fetch(`${baseURL}/especies`);
+        const peces = await res.json();
+        peces.forEach(p => {
+          const img = resolverImagen(p.imagen_url);
+          cont.innerHTML += `
+            <div class="col-md-4 mb-4">
+              <div class="card h-100 shadow-sm">
+                <img src="${img}" class="card-img-top" alt="${p.nombre_comun}">
+                <div class="card-body">
+                  <h5 class="card-title">${p.nombre_comun}</h5>
+                  <button class="btn btn-warning btn-sm me-2" onclick='abrirEditar(${JSON.stringify(p)})'>Editar</button>
+                  <button class="btn btn-danger btn-sm" onclick="abrirEliminar('${p._id}','${p.nombre_comun}')">Eliminar</button>
+                </div>
+              </div>
+            </div>`;
+        });
+      } catch {
+        cont.innerHTML = '<p class="text-danger">Error al cargar especies.</p>';
+      }
+    }
+
+    // Agregar pez
+    document.getElementById('form-agregar').addEventListener('submit', async e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      try {
+        const res = await fetch(`${baseURL}/especies`, { method: 'POST', body: fd });
+        if (!res.ok) throw '';
+        bootstrap.Modal.getInstance(document.getElementById('modalAgregarPez')).hide();
+        e.target.reset(); cargarPeces();
+      } catch {
+        document.getElementById('agregar-msg').textContent = 'Error al agregar pez';
+      }
     });
-  } catch (err) {
-    console.error('Error GET /especies', err);
-    cont.innerHTML = '<p class="text-danger">Error al cargar especies.</p>';
-  }
-}
 
-  // Agregar pez
-  document.getElementById('form-agregar').addEventListener('submit', async e => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    try {
-      const res = await fetch(`${baseURL}/especies`, { method: 'POST', body: fd });
-      if (!res.ok) throw new Error('No se creó');
-      bootstrap.Modal.getInstance(document.getElementById('modalAgregarPez')).hide();
-      e.target.reset();
-      cargarPeces();
-    } catch (err) {
-      console.error('Error POST /especies', err);
-      document.getElementById('agregar-msg').textContent = 'Error al agregar pez';
+    // Editar pez
+    function abrirEditar(p) {
+      const f = document.getElementById('form-editar');
+      f._id.value = p._id;
+      f.nombre_comun.value = p.nombre_comun;
+      f.nombre_cientifico.value = p.nombre_cientifico;
+      f.familia.value = p.familia;
+      f.alimentacion.value = p.alimentacion;
+      f.estado_conservacion.value = p.estado_conservacion;
+      new bootstrap.Modal(document.getElementById('modalEditar')).show();
     }
-  });
+    document.getElementById('form-editar').addEventListener('submit', async e => {
+      e.preventDefault();
+      const f = e.target;
+      const fd = new FormData(f);
+      try {
+        const res = await fetch(`${baseURL}/especies/${f._id.value}`, { method: 'PUT', body: fd });
+        if (!res.ok) throw '';
+        bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
+        cargarPeces();
+      } catch {
+        document.getElementById('editar-msg').textContent = 'Error al actualizar';
+      }
+    });
 
-  // Editar pez
-  function abrirEditar(p) {
-    const f = document.getElementById('form-editar');
-    f._id.value = p._id;
-    f.nombre_comun.value = p.nombre_comun;
-    f.nombre_cientifico.value = p.nombre_cientifico;
-    f.familia.value = p.familia;
-    f.alimentacion.value = p.alimentacion;
-    f.estado_conservacion.value = p.estado_conservacion;
-    new bootstrap.Modal(document.getElementById('modalEditar')).show();
-  }
-  document.getElementById('form-editar').addEventListener('submit', async e => {
-    e.preventDefault();
-    const f = e.target;
-    const id = f._id.value;
-    const fd = new FormData(f);
-    try {
-      const res = await fetch(`${baseURL}/especies/${id}`, { method: 'PUT', body: fd });
-      if (!res.ok) throw new Error('No se actualizó');
-      bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
-      cargarPeces();
-    } catch (err) {
-      console.error('Error PUT /especies', err);
-      document.getElementById('editar-msg').textContent = 'Error al actualizar';
+    // Eliminar pez
+    function abrirEliminar(id, nombre) {
+      document.getElementById('idEliminar').value = id;
+      document.getElementById('pezAEliminar').textContent = nombre;
+      new bootstrap.Modal(document.getElementById('modalEliminar')).show();
     }
-  });
+    document.getElementById('confirmar-eliminar').addEventListener('click', async () => {
+      try {
+        await fetch(`${baseURL}/especies/${document.getElementById('idEliminar').value}`, { method: 'DELETE' });
+        bootstrap.Modal.getInstance(document.getElementById('modalEliminar')).hide();
+        cargarPeces();
+      } catch {}
+    });
 
-  // Eliminar pez
-  function abrirEliminar(id, nombre) {
-    document.getElementById('idEliminar').value = id;
-    document.getElementById('pezAEliminar').textContent = nombre;
-    new bootstrap.Modal(document.getElementById('modalEliminar')).show();
-  }
-  document.getElementById('confirmar-eliminar').addEventListener('click', async () => {
-    const id = document.getElementById('idEliminar').value;
-    try {
-      const res = await fetch(`${baseURL}/especies/${id}`, { method: 'DELETE' });
-      if (res.ok) cargarPeces();
-      bootstrap.Modal.getInstance(document.getElementById('modalEliminar')).hide();
-    } catch (err) {
-      console.error('Error DELETE /especies', err);
-    }
-  });
-
-  window.onload = cargarPeces;
-</script>
+    window.onload = cargarPeces;
+  </script>
 </body>
 </html>
+
 
 
