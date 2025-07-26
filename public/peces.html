@@ -201,34 +201,44 @@
       return btoa(String.fromCharCode(...new Uint8Array(encBuf)));
     }
 
-    // --- Manejo de login (Único listener) ---
-    document
-      .getElementById('login-form')
+ // --- Manejo de login (Único listener) ---
+    document.getElementById('login-form')
       .addEventListener('submit', async e => {
         e.preventDefault();
         document.getElementById('login-msg').textContent = '';
         const usr = document.getElementById('username').value.trim();
         const pwd = document.getElementById('password').value;
+
         try {
+          // 1) Cifrar usuario y contraseña
           const encUser = await encryptOAEP(usr);
           const encPass = await encryptOAEP(pwd);
+
+          // 2) Petición al backend
           const res = await fetch(`${baseURL}/login`, {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ username:encUser, password:encPass })
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: encUser, password: encPass })
           });
           const data = await res.json();
+
+          // 3) Manejo de errores
           if (!res.ok) {
             document.getElementById('login-msg').textContent = data.error;
             return;
           }
-          // redirigir admin + analista → admin.html, resto → peces.html
+
+          // 4) Redirección según rol
           if (data.rol === 'admin' || data.rol === 'analista') {
+            sessionStorage.setItem('rol', data.rol);
             window.location.href = `${baseURL}/admin.html`;
           } else {
             window.location.href = `${baseURL}/peces.html`;
           }
+
         } catch (err) {
+          // 5) Error de conexión o de JS
+          console.error('Error en login:', err);
           document.getElementById('login-msg').textContent = 'Error de conexión';
         }
       });
