@@ -1,6 +1,3 @@
-// server.js
-// =========
-
 require('dotenv').config();
 const express    = require('express');
 const crypto     = require('crypto');
@@ -11,7 +8,6 @@ const mongoose   = require('mongoose');
 const bodyParser = require('body-parser');
 const multer     = require('multer');
 
-// — Cloudinary setup (sin cambios) —
 const cloudinary            = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 cloudinary.config({
@@ -31,73 +27,57 @@ const User    = require('./models/User');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// — – –  RSA: clave privada desde ENV — – –
+// **Clave PRIVADA SOLO desde ENV**
 const PRIVATE_KEY = process.env.RSA_PRIVATE_KEY;
 if (!PRIVATE_KEY) {
-  console.error('❌ RSA_PRIVATE_KEY no definida en ENV');
+  console.error('❌ Debes definir RSA_PRIVATE_KEY en Config Vars');
   process.exit(1);
 }
 
-// — – –  RSA: clave pública desde archivo versionado — – –
-const PUBLIC_KEY = fs.readFileSync(
-  path.join(__dirname, 'keys', 'public.pem'),
-  'utf8'
-);
+// **Clave PÚBLICA** desde archivo versionado
+const PUBLIC_KEY = fs.readFileSync(path.join(__dirname, 'keys', 'public.pem'), 'utf8');
+app.get('/api/publicKey', (req, res) => res.type('text/plain').send(PUBLIC_KEY));
 
-// Exponer pública para el front
-app.get('/api/publicKey', (req, res) => {
-  res.type('text/plain').send(PUBLIC_KEY);
-});
-
-// — – –  Conexión a MongoDB Atlas — – –
+// Conexión a MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
-    console.log('✅ Conectado a MongoDB Atlas');
-    // Crea admin si no existe
-    const admin = await User.findOne({ username: 'admin123' });
-    if (!admin) {
+    console.log('✅ MongoDB Atlas conectado');
+    if (!await User.exists({ username:'admin123' })) {
       await User.create({ username:'admin123', password:'admin123', role:'admin' });
       console.log('👤 Usuario admin123 creado');
     }
   })
-  .catch(err => console.error('❌ Error MongoDB:', err));
+  .catch(err => console.error('❌ Error Mongo:', err));
 
-// — – –  Middlewares — – –
+// Middlewares
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-// Sirve todo lo que esté en /public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// — – –  LOGIN (descifrado RSA + validación) — – –
+// **LOGIN DESCIFRADO RSA**
 app.post('/login', async (req, res) => {
   try {
     const { username: encUser, password: encPass } = req.body;
-
-    // Base64 → Buffer
     const bufUser = Buffer.from(encUser, 'base64');
     const bufPass = Buffer.from(encPass, 'base64');
 
-    // Descifrado PKCS#1 v1.5
+    // PKCS#1 v1.5
     const username = crypto.privateDecrypt(
       { key: PRIVATE_KEY, padding: crypto.constants.RSA_PKCS1_PADDING },
       bufUser
     ).toString('utf8');
-
     const password = crypto.privateDecrypt(
       { key: PRIVATE_KEY, padding: crypto.constants.RSA_PKCS1_PADDING },
       bufPass
     ).toString('utf8');
 
-    // Validación en DB
     const user = await User.findOne({ username });
     if (!user) return res.status(401).json({ error:'Usuario no encontrado' });
-
     const ok = user.password.startsWith('$2')
       ? await bcrypt.compare(password, user.password)
       : password === user.password;
     if (!ok) return res.status(401).json({ error:'Contraseña incorrecta' });
 
-    // Éxito → devolver rol
     return res.json({ rol: user.role });
   } catch (err) {
     console.error('💥 Error /login:', err);

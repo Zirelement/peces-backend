@@ -27,6 +27,7 @@
       scroll-behavior: smooth;
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/jsencrypt@3.0.0-rc.1/bin/jsencrypt.min.js"></script>
 </head>
 <body class="bg-light">
   <!-- NAVBAR -->
@@ -185,32 +186,44 @@
       }
     }
 
-    // Login y redirección
-    document.getElementById('login-form').addEventListener('submit', async e => {
-      e.preventDefault();
-      document.getElementById('login-msg').textContent = '';
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value;
-      try {
-        const res = await fetch(`${baseURL}/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
-        });
-        if (!res.ok) {
-          const err = await res.json();
-          return document.getElementById('login-msg').textContent = err.error;
+ // — LOGIN CIFRADO RSA —
+    async function fetchPublicKey() {
+      const res = await fetch(baseURL + '/api/publicKey');
+      if (!res.ok) throw new Error('No pude cargar la clave pública');
+      return res.text();
+    }
+
+    document.getElementById('login-form')
+      .addEventListener('submit', async e => {
+        e.preventDefault();
+        document.getElementById('login-msg').textContent = '';
+        const usr = document.getElementById('username').value.trim();
+        const pwd = document.getElementById('password').value;
+
+        try {
+          const pubKey = await fetchPublicKey();
+          const crypt = new JSEncrypt();
+          crypt.setPublicKey(pubKey);
+
+          const encUser = window.btoa( crypt.encrypt(usr) );
+          const encPass = window.btoa( crypt.encrypt(pwd) );
+
+          const res = await fetch(baseURL + '/login', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ username:encUser, password:encPass })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            document.getElementById('login-msg').textContent = data.error;
+            return;
+          }
+          if (data.rol==='admin') window.location.href= baseURL+'/admin.html';
+          else window.location.reload();
+        } catch (err) {
+          document.getElementById('login-msg').textContent = err.message;
         }
-        const { rol } = await res.json();
-        if (rol === 'admin') {
-          window.location.href = `${baseURL}/admin.html`;
-        } else {
-          window.location.href = baseURL;
-        }
-      } catch {
-        document.getElementById('login-msg').textContent = 'Error de conexión';
-      }
-    });
+      });
 
     window.onload = cargarPeces;
   </script>
