@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Login — Peces del Río Peruano</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link 
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" 
+    rel="stylesheet">
+  <!-- JSEncrypt para RSA en navegador -->
+  <script src="https://cdn.jsdelivr.net/npm/jsencrypt@3.0.0-rc.1/bin/jsencrypt.min.js"></script>
+</head>
+<body class="d-flex justify-content-center align-items-center vh-100 bg-light">
+  <form id="loginForm" class="card p-4 shadow-sm" style="width: 320px;">
+    <h4 class="mb-3 text-center">Iniciar Sesión</h4>
+    <input id="inpUser" class="form-control mb-2" placeholder="Usuario" required>
+    <input id="inpPass" type="password" class="form-control mb-2" placeholder="Contraseña" required>
+    <div id="msgError" class="text-danger mb-2"></div>
+    <button class="btn btn-success w-100" type="submit">Entrar</button>
+  </form>
+
+  <script>
+    const API = location.origin;
+
+    async function fetchPublicKey() {
+      const res = await fetch(API + '/api/publicKey');
+      if (!res.ok) throw new Error('No pude obtener la clave pública');
+      return res.text();
+    }
+
+    document.getElementById('loginForm')
+      .addEventListener('submit', async e => {
+        e.preventDefault();
+        try {
+          // Obtener clave pública
+          const pubKey = await fetchPublicKey();
+          const crypt = new JSEncrypt();
+          crypt.setPublicKey(pubKey);
+
+          // Cifrar + Base64
+          const usr = document.getElementById('inpUser').value;
+          const pwd = document.getElementById('inpPass').value;
+          const encUser = window.btoa(crypt.encrypt(usr));
+          const encPass = window.btoa(crypt.encrypt(pwd));
+
+          // Enviar al backend
+          const resp = await fetch(API + '/login', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ username: encUser, password: encPass })
+          });
+
+          const data = await resp.json();
+          if (resp.ok) {
+            location.href = 'admin.html';
+          } else {
+            throw new Error(data.error || 'Login fallido');
+          }
+        } catch (err) {
+          document.getElementById('msgError').textContent = err.message;
+        }
+      });
+  </script>
+</body>
+</html>
+

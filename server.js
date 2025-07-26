@@ -1,29 +1,25 @@
 require('dotenv').config();
 const express    = require('express');
+const crypto     = require('crypto');          // ← Para descifrar RSA
 const path       = require('path');
+const fs         = require('fs');
 const bcrypt     = require('bcrypt');
 const mongoose   = require('mongoose');
 const bodyParser = require('body-parser');
 const multer     = require('multer');
 
-// Cloudinary
-const cloudinary           = require('cloudinary').v2;
+// Cloudinary (sin cambios)
+const cloudinary            = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key:    process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+  cloud_name:    process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:       process.env.CLOUDINARY_API_KEY,
+  api_secret:    process.env.CLOUDINARY_API_SECRET
 });
-
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: {
-    folder: 'peces',                // Carpeta en tu cuenta de Cloudinary
-    allowed_formats: ['jpg','png','jpeg','webp']
-  }
+  params: { folder: 'peces', allowed_formats: ['jpg','png','jpeg','webp'] }
 });
-
 const upload = multer({ storage });
 
 const Species = require('./models/Species');
@@ -32,54 +28,81 @@ const User    = require('./models/User');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// Conectar a MongoDB Atlas
+// — — —  RSA Keys — — — 
+// 1) Clave privada desde ENV o desde keys/private.pem
+const PRIVATE_KEY = process.env.RSA_PRIVATE_KEY ||
+  fs.readFileSync(path.join(__dirname, 'keys', 'private.pem'), 'utf8');
+if (!PRIVATE_KEY) {
+  console.error('❌ RSA private key not found');
+  process.exit(1);
+}
+
+// 2) Clave pública desde keys/public.pem
+const PUBLIC_KEY = process.env.RSA_PUBLIC_KEY ||
+  fs.readFileSync(path.join(__dirname, 'keys', 'public.pem'), 'utf8');
+
+// Endpoint para que el frontend descargue la pública y pueda cifrar
+app.get('/api/publicKey', (req, res) => {
+  res.type('text/plain').send(PUBLIC_KEY);
+});
+
+// — — —  Conexión a MongoDB Atlas — — — 
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log('✅ Conectado a MongoDB Atlas');
-    // Crear admin si no existe
     const admin = await User.findOne({ username: 'admin123' });
     if (!admin) {
-      await User.create({
-        username: 'admin123',
-        password: 'admin123',  // texto plano para coincidir con tu colección
-        role:     'admin'
-      });
-      console.log('👤 Usuario creado: admin123 / admin123');
+      // Crea admin en texto plano; luego puedes hashear con bcrypt
+      await User.create({ username: 'admin123', password: 'admin123', role: 'admin' });
+      console.log('👤 Usuario admin123 creado');
     }
   })
-  .catch(err => console.error('❌ Error conectando a MongoDB:', err));
+  .catch(err => console.error('❌ Error MongoDB:', err));
 
 // Middlewares
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-// Sirve tu carpeta public (HTML, CSS, JS)
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'))); // Sirve login.html, admin.html, etc.
 
-// --- LOGIN ---
+// — — —  Login con RSA — — — 
 app.post('/login', async (req, res) => {
-  console.log('🔐 Intento de login:', req.body);
-  const { username, password } = req.body;
   try {
+    // 1) Recibimos Base64
+    const { username: encUser, password: encPass } = req.body;
+
+    // 2) Convertir a Buffer
+    const bufUser = Buffer.from(encUser, 'base64');
+    const bufPass = Buffer.from(encPass, 'base64');
+
+    // 3) Descifrar con la clave privada
+    const username = crypto.privateDecrypt(
+      { key: PRIVATE_KEY, padding: crypto.constants.RSA_PKCS1_PADDING },
+      bufUser
+    ).toString('utf8');
+
+    const password = crypto.privateDecrypt(
+      { key: PRIVATE_KEY, padding: crypto.constants.RSA_PKCS1_PADDING },
+      bufPass
+    ).toString('utf8');
+
+    console.log('🔐 Login descifrado para:', username);
+
+    // 4) Validar credenciales
     const user = await User.findOne({ username });
-    if (!user) {
-      console.log('❌ Usuario no encontrado:', username);
-      return res.status(401).json({ error: 'Usuario no encontrado' });
-    }
-    let ok = false;
-    if (user.password.startsWith('$2')) {
-      ok = await bcrypt.compare(password, user.password);
-    } else {
-      ok = password === user.password;
-    }
-    if (!ok) {
-      console.log('❌ Contraseña incorrecta para:', username);
-      return res.status(401).json({ error: 'Contraseña incorrecta' });
-    }
-    console.log('✅ Login exitoso:', username, 'role=', user.role);
+    if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });
+
+    const ok = user.password.startsWith('$2')
+      ? await bcrypt.compare(password, user.password)
+      : password === user.password;
+
+    if (!ok) return res.status(401).json({ error: 'Contraseña incorrecta' });
+
+    // 5) Éxito
     return res.json({ rol: user.role });
+
   } catch (err) {
-    console.error('💥 Error en /login:', err);
-    return res.status(500).json({ error: 'Error interno' });
+    console.error('💥 Error /login:', err);
+    return res.status(400).json({ error: 'Credenciales inválidas' });
   }
 });
 
@@ -135,14 +158,12 @@ app.delete('/especies/:id', async (req, res) => {
     res.status(500).json({ error: 'Error interno' });
   }
 });
-// Al final, antes de app.listen(...)
+
+// Si acceden a “/”, mostramos el login
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'peces.html'));
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor escuchando en puerto ${PORT}`);
-});
-
+// Levantamos el servidor
+app.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
 
