@@ -66,7 +66,6 @@ app.get('/api/publicKey', (req, res) => {
   res.type('text').send(PUBLIC_KEY);
 });
 
-// —————————————————————————
 //  LOGIN: descifrado con RSA‑OAEP/SHA‑256
 // —————————————————————————
 app.post('/login', async (req, res) => {
@@ -95,7 +94,9 @@ app.post('/login', async (req, res) => {
 
     // 3) Verificar en BD
     const user = await User.findOne({ username });
-    if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });
+    if (!user) {
+      return res.status(401).json({ error: 'Usuario no encontrado' });
+    }
 
     let ok;
     if (user.password.startsWith('$2')) {
@@ -103,15 +104,19 @@ app.post('/login', async (req, res) => {
     } else {
       ok = password === user.password;
     }
-    if (!ok) return res.status(401).json({ error: 'Contraseña incorrecta' });
+    if (!ok) {
+      return res.status(401).json({ error: 'Contraseña incorrecta' });
+    }
 
-    // 4) Éxito
+    // 4) Devolver rol para que el front redirija correctamente
     return res.json({ rol: user.role });
+
   } catch (err) {
     console.error('💥 Error en /login:', err);
     return res.status(400).json({ error: 'Formato de credenciales inválido' });
   }
 });
+
 
 // —————————————————————————
 //  CRUD de especies

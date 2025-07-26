@@ -184,66 +184,97 @@
       }
     }
 
-    // —————————————————————————
-    //  RSA‑OAEP / SHA-256 cifrado
-    // —————————————————————————
+    // --- Cifrado RSA‑OAEP/SHA‑256 con Web Crypto API ---
     async function encryptOAEP(text) {
-      // 1) Traer PEM pública
       const pem = await fetch('/api/publicKey').then(r => r.text());
-      const b64 = pem
-        .replace('-----BEGIN PUBLIC KEY-----','')
-        .replace('-----END PUBLIC KEY-----','')
-        .replace(/\s+/g,'');
-      // 2) Base64 → ArrayBuffer
+      const b64 = pem.replace(/-----.*?KEY-----|\s+/g,'');
       const keyBuf = Uint8Array.from(atob(b64), c=>c.charCodeAt(0)).buffer;
-      // 3) Importar
       const cryptoKey = await window.crypto.subtle.importKey(
         'spki', keyBuf,
         { name:'RSA-OAEP', hash:'SHA-256' },
         false, ['encrypt']
       );
-      // 4) Cifrar y devolver Base64
       const encBuf = await window.crypto.subtle.encrypt(
-        { name:'RSA-OAEP' },
-        cryptoKey,
+        { name:'RSA-OAEP' }, cryptoKey,
         new TextEncoder().encode(text)
       );
       return btoa(String.fromCharCode(...new Uint8Array(encBuf)));
     }
 
-    // —————————————————————————
-    //  Login cifrado + redirección
-    // —————————————————————————
-    document.getElementById('login-form').addEventListener('submit', async e => {
-      e.preventDefault();
-      const msgEl = document.getElementById('login-msg');
-      msgEl.textContent = '';
-      try {
-        const usr     = document.getElementById('username').value.trim();
-        const pwd     = document.getElementById('password').value;
-        const encUser = await encryptOAEP(usr);
-        const encPass = await encryptOAEP(pwd);
-
-        const res = await fetch(`${baseURL}/login`, {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ username: encUser, password: encPass })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          msgEl.textContent = data.error;
-        } else if (data.rol === 'admin'|| rol === 'analista') {
-          window.location.href = `${baseURL}/admin.html`;
-        } else {
-          window.location.href = `${baseURL}/peces.html`;
+    // --- Manejo de login (Único listener) ---
+    document
+      .getElementById('login-form')
+      .addEventListener('submit', async e => {
+        e.preventDefault();
+        document.getElementById('login-msg').textContent = '';
+        const usr = document.getElementById('username').value.trim();
+        const pwd = document.getElementById('password').value;
+        try {
+          const encUser = await encryptOAEP(usr);
+          const encPass = await encryptOAEP(pwd);
+          const res = await fetch(`${baseURL}/login`, {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ username:encUser, password:encPass })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            document.getElementById('login-msg').textContent = data.error;
+            return;
+          }
+          // redirigir admin + analista → admin.html, resto → peces.html
+          if (data.rol === 'admin' || data.rol === 'analista') {
+            window.location.href = `${baseURL}/admin.html`;
+          } else {
+            window.location.href = `${baseURL}/peces.html`;
+          }
+        } catch (err) {
+          document.getElementById('login-msg').textContent = 'Error de conexión';
         }
-      } catch (err) {
-        console.error('Login error:', err);
-        msgEl.textContent = 'Error de conexión';
-      }
-    });
+      });
 
-    // Al cargar la página
+    // --- Galería ---
+    function resolverImagen(url) {
+      if (!url) return `${baseURL}/images/default.png`;
+      if (url.startsWith('http')) return url;
+      if (url.startsWith('/')) return baseURL + url;
+      return `${baseURL}/images/${url}`;
+    }
+    async function cargarPeces() {
+      const cont = document.getElementById('contenedor-peces');
+      cont.innerHTML = '';
+      try {
+        const res = await fetch(`${baseURL}/especies`);
+        const data = await res.json();
+        if (!data.length) {
+          cont.innerHTML = `<p class="text-muted text-center">No hay peces registrados aún.</p>`;
+          return;
+        }
+        data.filter(p=>p.enabled!==false).forEach(pez=>{
+          const archivo = pez.nombre_comun.toLowerCase().replace(/\s+/g,'-')+'.html';
+          const img    = resolverImagen(pez.imagen_url);
+          cont.innerHTML += `
+            <div class="col-md-4 mb-4">
+              <a href="peces/${archivo}" class="text-decoration-none text-dark">
+                <div class="card h-100 shadow-sm">
+                  <img src="${img}" class="card-img-top" alt="${pez.nombre_comun}">
+                  <div class="card-body">
+                    <h5 class="card-title">${pez.nombre_comun}</h5>
+                    <p class="card-text">
+                      <strong>Nombre científico:</strong> ${pez.nombre_cientifico}<br>
+                      <strong>Familia:</strong> ${pez.familia}<br>
+                      <strong>Alimentación:</strong> ${pez.alimentacion||'Desconocida'}<br>
+                      <strong>Conservación:</strong> ${pez.estado_conservacion||'No especificado'}
+                    </p>
+                  </div>
+                </div>
+              </a>
+            </div>`;
+        });
+      } catch {
+        cont.innerHTML = `<p class="text-danger text-center">Error al cargar los datos.</p>`;
+      }
+    }
     window.onload = cargarPeces;
   </script>
 </body>
