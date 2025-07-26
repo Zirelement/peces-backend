@@ -105,117 +105,158 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
+   <script>
     const baseURL = location.origin;
-    const rol = sessionStorage.getItem('rol');
+    const rol     = sessionStorage.getItem('rol') || 'invitado';
+
+    // Redirijo si no es admin ni analista
+    if (!['admin','analista'].includes(rol)) {
+      location.replace('peces.html');
+    }
 
     // Sólo ADMIN ve el botón de agregar
     if (rol !== 'admin') {
       document.getElementById('btn-add').style.display = 'none';
     }
 
-    async function cargarPanel() {
-      const res = await fetch(`${baseURL}/especies`);
-      const peces = await res.json();
-      const cont = document.getElementById('cards-container');
+    // Cerrar sesión
+    document.getElementById('btn-logout')
+      .addEventListener('click', () => {
+        sessionStorage.clear();
+        location.replace('peces.html');
+      });
+
+    // Resuelve URL de imagen
+    function resolverImagen(url) {
+      if (!url) return `${baseURL}/images/default.png`;
+      return url.startsWith('http')
+        ? url
+        : url.startsWith('/')
+          ? baseURL + url
+          : `${baseURL}/images/${url}`;
+    }
+
+    // Renderiza las tarjetas
+    function renderEspecies(especies) {
+      const cont = document.getElementById('admin-contenedor-peces');
       cont.innerHTML = '';
-      peces.forEach(p => {
-        cont.innerHTML += `
+      especies.forEach(p => {
+        const imgUrl = resolverImagen(p.imagen_url);
+        cont.insertAdjacentHTML('beforeend', `
           <div class="col-md-4 mb-4">
             <div class="card shadow-sm h-100">
-              <img src="${baseURL}/images/${p.imagen_url}" class="card-img-top" alt="${p.nombre_comun}">
+              <img src="${imgUrl}" class="card-img-top" alt="${p.nombre_comun}">
               <div class="card-body">
                 <h5>${p.nombre_comun}</h5>
-                <button class="btn btn-warning btn-edit" data-id="${p._id}">Editar</button>
-                <button class="btn btn-danger btn-delete" data-id="${p._id}">Eliminar</button>
+                <button
+                  class="btn btn-warning btn-custom me-2"
+                  onclick="abrirEditar('${p._id}')">
+                  <i class="bi bi-pencil"></i> Editar
+                </button>
+                ${
+                  rol === 'admin'
+                  ? `<button
+                       class="btn btn-danger btn-custom"
+                       onclick="abrirEliminar('${p._id}','${p.nombre_comun}')">
+                       <i class="bi bi-trash"></i> Eliminar
+                     </button>`
+                  : ''
+                }
               </div>
             </div>
-          </div>`;
+          </div>
+        `);
       });
-   // Analista no ve botón Eliminar
-      if (rol !== 'admin') {
-        document.querySelectorAll('.btn-delete')
-          .forEach(btn => btn.style.display = 'none');
+    }
+
+    // Carga desde el API
+    async function cargarPanel() {
+      try {
+        const res = await fetch(`${baseURL}/especies`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        renderEspecies(data);
+      } catch {
+        document.getElementById('admin-contenedor-peces').innerHTML =
+          `<p class="text-danger text-center">Error al cargar las especies.</p>`;
       }
-
-      // Eventos editar/borrar…
-      document.querySelectorAll('.btn-edit')
-        .forEach(btn => btn.onclick = () => editarPez(btn.dataset.id));
-      document.querySelectorAll('.btn-delete')
-        .forEach(btn => btn.onclick = () => eliminarPez(btn.dataset.id));
     }
 
-    function editarPez(id) {
-      // lógica para editar
-      window.location.href = `editar.html?id=${id}`;
-    }
-    function eliminarPez(id) {
-      // sólo admin puede
-      if (rol !== 'admin') return;
-      fetch(`${baseURL}/especies/${id}`, { method: 'DELETE' })
-        .then(_ => cargarPanel());
-    }
+    // Abrir modal Editar
+    window.abrirEditar = async id => {
+      // obtengo datos del pez
+      const res = await fetch(`${baseURL}/especies`);
+      const peces = await res.json();
+      const p = peces.find(x => x._id === id);
+      const f = document.getElementById('form-editar');
+      f._id.value               = p._id;
+      f.nombre_comun.value      = p.nombre_comun;
+      f.nombre_cientifico.value = p.nombre_cientifico;
+      f.familia.value           = p.familia;
+      f.alimentacion.value      = p.alimentacion || '';
+      f.estado_conservacion.value = p.estado_conservacion || '';
+      new bootstrap.Modal(document.getElementById('modalEditar')).show();
+    };
 
-    document.getElementById('btn-add')
-      .addEventListener('click', () => {
-        if (rol !== 'admin') return;
-        window.location.href = 'nuevo.html';
+    // Submit Editar
+    document.getElementById('form-editar')
+      .addEventListener('submit', async e => {
+        e.preventDefault();
+        const f = e.target;
+        const fd = new FormData(f);
+        try {
+          const res = await fetch(
+            `${baseURL}/especies/${f._id.value}`,
+            { method: 'PUT', body: fd }
+          );
+          if (!res.ok) throw '';
+          bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
+          cargarPanel();
+        } catch {
+          document.getElementById('editar-msg').textContent = 'Error al actualizar';
+        }
+      });
+
+    // Abrir modal Eliminar
+    window.abrirEliminar = (id, nombre) => {
+      document.getElementById('idEliminar').value   = id;
+      document.getElementById('pezAEliminar').textContent = nombre;
+      new bootstrap.Modal(document.getElementById('modalEliminar')).show();
+    };
+
+    // Confirmar Eliminar
+    document.getElementById('confirmar-eliminar')
+      .addEventListener('click', async () => {
+        try {
+          await fetch(
+            `${baseURL}/especies/${document.getElementById('idEliminar').value}`,
+            { method: 'DELETE' }
+          );
+          bootstrap.Modal.getInstance(document.getElementById('modalEliminar')).hide();
+          cargarPanel();
+        } catch {}
       });
 
     // Agregar pez
-    document.getElementById('form-agregar').addEventListener('submit', async e => {
-      e.preventDefault();
-      const fd = new FormData(e.target);
-      try {
-        const res = await fetch(`${baseURL}/especies`, { method: 'POST', body: fd });
-        if (!res.ok) throw '';
-        bootstrap.Modal.getInstance(document.getElementById('modalAgregarPez')).hide();
-        e.target.reset(); cargarPeces();
-      } catch {
-        document.getElementById('agregar-msg').textContent = 'Error al agregar pez';
-      }
-    });
+    document.getElementById('form-agregar')
+      .addEventListener('submit', async e => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        try {
+          const res = await fetch(
+            `${baseURL}/especies`,
+            { method: 'POST', body: fd }
+          );
+          if (!res.ok) throw '';
+          bootstrap.Modal.getInstance(document.getElementById('modalAgregarPez')).hide();
+          e.target.reset();
+          cargarPanel();
+        } catch {
+          document.getElementById('agregar-msg').textContent = 'Error al agregar pez';
+        }
+      });
 
-    // Editar pez
-    function abrirEditar(p) {
-      const f = document.getElementById('form-editar');
-      f._id.value = p._id;
-      f.nombre_comun.value = p.nombre_comun;
-      f.nombre_cientifico.value = p.nombre_cientifico;
-      f.familia.value = p.familia;
-      f.alimentacion.value = p.alimentacion;
-      f.estado_conservacion.value = p.estado_conservacion;
-      new bootstrap.Modal(document.getElementById('modalEditar')).show();
-    }
-    document.getElementById('form-editar').addEventListener('submit', async e => {
-      e.preventDefault();
-      const f = e.target;
-      const fd = new FormData(f);
-      try {
-        const res = await fetch(`${baseURL}/especies/${f._id.value}`, { method: 'PUT', body: fd });
-        if (!res.ok) throw '';
-        bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
-        cargarPeces();
-      } catch {
-        document.getElementById('editar-msg').textContent = 'Error al actualizar';
-      }
-    });
-
-    // Eliminar pez
-    function abrirEliminar(id, nombre) {
-      document.getElementById('idEliminar').value = id;
-      document.getElementById('pezAEliminar').textContent = nombre;
-      new bootstrap.Modal(document.getElementById('modalEliminar')).show();
-    }
-    document.getElementById('confirmar-eliminar').addEventListener('click', async () => {
-      try {
-        await fetch(`${baseURL}/especies/${document.getElementById('idEliminar').value}`, { method: 'DELETE' });
-        bootstrap.Modal.getInstance(document.getElementById('modalEliminar')).hide();
-        cargarPeces();
-      } catch {}
-    });
-
-    window.onload = cargarPeces;
+    window.onload = cargarPanel;
   </script>
 </body>
 </html>
