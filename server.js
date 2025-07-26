@@ -1,6 +1,9 @@
+// server.js
+// =========
+
 require('dotenv').config();
 const express    = require('express');
-const crypto     = require('crypto');          // ← Para descifrar RSA
+const crypto     = require('crypto');
 const path       = require('path');
 const fs         = require('fs');
 const bcrypt     = require('bcrypt');
@@ -8,7 +11,7 @@ const mongoose   = require('mongoose');
 const bodyParser = require('body-parser');
 const multer     = require('multer');
 
-// Cloudinary (sin cambios)
+// — Cloudinary setup (sin cambios) —
 const cloudinary            = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 cloudinary.config({
@@ -28,52 +31,53 @@ const User    = require('./models/User');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// — — —  RSA Keys — — — 
-// 🔒 Clave PRIVADA: **solo** desde variable de entorno
+// — – –  RSA: clave privada desde ENV — – –
 const PRIVATE_KEY = process.env.RSA_PRIVATE_KEY;
 if (!PRIVATE_KEY) {
-  console.error('❌ RSA_PRIVATE_KEY no definida en el entorno');
+  console.error('❌ RSA_PRIVATE_KEY no definida en ENV');
   process.exit(1);
 }
 
-// Clave pública desde archivo versionado
+// — – –  RSA: clave pública desde archivo versionado — – –
 const PUBLIC_KEY = fs.readFileSync(
-  path.join(__dirname, 'keys', 'public.pem'),'utf8');
-  
-// Endpoint para que el frontend descargue la pública y pueda cifrar
+  path.join(__dirname, 'keys', 'public.pem'),
+  'utf8'
+);
+
+// Exponer pública para el front
 app.get('/api/publicKey', (req, res) => {
   res.type('text/plain').send(PUBLIC_KEY);
 });
 
-// — — —  Conexión a MongoDB Atlas — — — 
+// — – –  Conexión a MongoDB Atlas — – –
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log('✅ Conectado a MongoDB Atlas');
+    // Crea admin si no existe
     const admin = await User.findOne({ username: 'admin123' });
     if (!admin) {
-      // Crea admin en texto plano; luego puedes hashear con bcrypt
-      await User.create({ username: 'admin123', password: 'admin123', role: 'admin' });
+      await User.create({ username:'admin123', password:'admin123', role:'admin' });
       console.log('👤 Usuario admin123 creado');
     }
   })
   .catch(err => console.error('❌ Error MongoDB:', err));
 
-// Middlewares
+// — – –  Middlewares — – –
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public'))); // Sirve login.html, admin.html, etc.
+// Sirve todo lo que esté en /public
+app.use(express.static(path.join(__dirname, 'public')));
 
-// — — —  Login con RSA — — — 
+// — – –  LOGIN (descifrado RSA + validación) — – –
 app.post('/login', async (req, res) => {
   try {
-    // 1) Recibimos Base64
     const { username: encUser, password: encPass } = req.body;
 
-    // 2) Convertir a Buffer
+    // Base64 → Buffer
     const bufUser = Buffer.from(encUser, 'base64');
     const bufPass = Buffer.from(encPass, 'base64');
 
-    // 3) Descifrar con la clave privada
+    // Descifrado PKCS#1 v1.5
     const username = crypto.privateDecrypt(
       { key: PRIVATE_KEY, padding: crypto.constants.RSA_PKCS1_PADDING },
       bufUser
@@ -84,27 +88,22 @@ app.post('/login', async (req, res) => {
       bufPass
     ).toString('utf8');
 
-    console.log('🔐 Login descifrado para:', username);
-
-    // 4) Validar credenciales
+    // Validación en DB
     const user = await User.findOne({ username });
-    if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });
+    if (!user) return res.status(401).json({ error:'Usuario no encontrado' });
 
     const ok = user.password.startsWith('$2')
       ? await bcrypt.compare(password, user.password)
       : password === user.password;
+    if (!ok) return res.status(401).json({ error:'Contraseña incorrecta' });
 
-    if (!ok) return res.status(401).json({ error: 'Contraseña incorrecta' });
-
-    // 5) Éxito
+    // Éxito → devolver rol
     return res.json({ rol: user.role });
-
   } catch (err) {
     console.error('💥 Error /login:', err);
-    return res.status(400).json({ error: 'Credenciales inválidas' });
+    return res.status(400).json({ error:'Formato de credenciales inválido' });
   }
 });
-
 // --- CRUD PECES ---
 app.get('/especies', async (req, res) => {
   console.log('🔍 GET /especies');
@@ -158,9 +157,10 @@ app.delete('/especies/:id', async (req, res) => {
   }
 });
 
-// Si acceden a “/”, mostramos el login
+// — – –  RUTA RAÍZ: ahora servimos galerías, no un login aparte — – –
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+  // ← Anteriormente apuntaba a login.html; ahora a peces.html
+  res.sendFile(path.join(__dirname, 'public', 'peces.html'));
 });
 
 // Levantamos el servidor
