@@ -29,18 +29,17 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 
 // — — —  RSA Keys — — — 
-// 1) Clave privada desde ENV o desde keys/private.pem
-const PRIVATE_KEY = process.env.RSA_PRIVATE_KEY ||
-  fs.readFileSync(path.join(__dirname, 'keys', 'private.pem'), 'utf8');
+// 🔒 Clave PRIVADA: **solo** desde variable de entorno
+const PRIVATE_KEY = process.env.RSA_PRIVATE_KEY;
 if (!PRIVATE_KEY) {
-  console.error('❌ RSA private key not found');
+  console.error('❌ RSA_PRIVATE_KEY no definida en el entorno');
   process.exit(1);
 }
 
-// 2) Clave pública desde keys/public.pem
-const PUBLIC_KEY = process.env.RSA_PUBLIC_KEY ||
-  fs.readFileSync(path.join(__dirname, 'keys', 'public.pem'), 'utf8');
-
+// Clave pública desde archivo versionado
+const PUBLIC_KEY = fs.readFileSync(
+  path.join(__dirname, 'keys', 'public.pem'),'utf8');
+  
 // Endpoint para que el frontend descargue la pública y pueda cifrar
 app.get('/api/publicKey', (req, res) => {
   res.type('text/plain').send(PUBLIC_KEY);
