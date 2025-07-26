@@ -232,7 +232,7 @@
         const data = await res.json();
         if (!res.ok) {
           msgEl.textContent = data.error;
-        } else if (data.rol === 'admin') {
+        } else if (data.rol === 'admin'|| rol === 'analista') {
           window.location.href = `${baseURL}/admin.html`;
         } else {
           window.location.href = `${baseURL}/peces.html`;
