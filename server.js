@@ -7,8 +7,7 @@ const bcrypt     = require('bcrypt');
 const mongoose   = require('mongoose');
 const bodyParser = require('body-parser');
 const multer     = require('multer');
-const fetch 	 = require('node-fetch');
-const axios      = require('axios');
+const fetch      = require('node-fetch');
 
 // Cloudinary
 const cloudinary            = require('cloudinary').v2;
@@ -48,29 +47,29 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname,'public')));
 
-// entregamos la pública al frontend
+// entregamos la clave pública al frontend
 app.get('/api/publicKey', (req, res) => {
   res.type('text').send(PUBLIC_KEY);
 });
 
-// LOGIN: descifrado RSA-OAEP/SHA-256 + validación de reCAPTCHA v2
+// LOGIN: descifrado RSA-OAEP/SHA-256 + validación reCAPTCHA v2
 app.post('/login', async (req, res) => {
   try {
     const { username: encUser, password: encPass, recaptchaToken } = req.body;
 
-    // 0) Verificar que venga el token de reCAPTCHA
+    // 0) Verificar token de reCAPTCHA
     if (!recaptchaToken) {
       return res.status(400).json({ error: 'reCAPTCHA no verificado' });
     }
 
-    // 1) Validar token en servidor con Google
+    // 1) Validar token con Google
     const verificationURL =
       `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}` +
       `&response=${recaptchaToken}`;
-    const recaptchaRes = await fetch(verificationURL, { method: 'POST' });
-    const recaptchaJson = await recaptchaRes.json();
-    if (!recaptchaJson.success) {
-      return res.status(401).json({ error: 'Fallo en verificación reCAPTCHA' });
+    const recRes  = await fetch(verificationURL, { method: 'POST' });
+    const recJson = await recRes.json();
+    if (!recJson.success) {
+      return res.status(401).json({ error: 'Verificación reCAPTCHA fallida' });
     }
 
     // 2) Descifrar usuario
@@ -99,7 +98,7 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Usuario no encontrado' });
     }
 
-    // 5) Validar contraseña (bcrypt o texto plano)
+    // 5) Validar contraseña
     const ok = user.password.startsWith('$2')
       ? await bcrypt.compare(password, user.password)
       : password === user.password;
@@ -107,7 +106,7 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Contraseña incorrecta' });
     }
 
-    // 6) Éxito: devolver rol
+    // 6) Éxito → devolver rol
     res.json({ rol: user.role });
 
   } catch (err) {
@@ -116,7 +115,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// CRUD especies
+// CRUD de especies
 app.get('/especies', async (req, res) => {
   try {
     res.json(await Species.find());
@@ -125,6 +124,7 @@ app.get('/especies', async (req, res) => {
     res.status(500).json({ error: 'Error interno' });
   }
 });
+
 app.post('/especies', upload.single('imagen'), async (req, res) => {
   try {
     const data = {
@@ -141,6 +141,7 @@ app.post('/especies', upload.single('imagen'), async (req, res) => {
     res.status(500).json({ error: 'Error interno' });
   }
 });
+
 app.put('/especies/:id', upload.single('imagen'), async (req, res) => {
   try {
     const update = { ...req.body };
@@ -152,6 +153,7 @@ app.put('/especies/:id', upload.single('imagen'), async (req, res) => {
     res.status(500).json({ error: 'Error interno' });
   }
 });
+
 app.delete('/especies/:id', async (req, res) => {
   try {
     await Species.findByIdAndDelete(req.params.id);
@@ -162,10 +164,11 @@ app.delete('/especies/:id', async (req, res) => {
   }
 });
 
-// página principal
+// Servir página principal
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname,'public','peces.html'));
 });
+
 app.listen(PORT, () => {
   console.log(`🚀 Servidor escuchando en puerto ${PORT}`);
 });
