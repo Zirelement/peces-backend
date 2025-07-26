@@ -7,6 +7,7 @@ const bcrypt     = require('bcrypt');
 const mongoose   = require('mongoose');
 const bodyParser = require('body-parser');
 const multer     = require('multer');
+const fetch      = require('node-fetch');
 
 // Cloudinary
 const cloudinary            = require('cloudinary').v2;
@@ -46,52 +47,66 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname,'public')));
 
-// entregamos la pública al frontend
+// entregamos la clave pública al frontend
 app.get('/api/publicKey', (req, res) => {
   res.type('text').send(PUBLIC_KEY);
 });
 
-// LOGIN: descifrado RSA-OAEP/SHA-256
+// LOGIN: descifrado RSA-OAEP/SHA-256 + validación reCAPTCHA v2
 app.post('/login', async (req, res) => {
   try {
-    const { username: encUser, password: encPass } = req.body;
+    const { username: encUser, password: encPass, recaptchaToken } = req.body;
 
-    // descifra usuario
+    // 0) Verificar token de reCAPTCHA
+    if (!recaptchaToken) {
+      return res.status(400).json({ error: 'reCAPTCHA no verificado' });
+    }
+
+    // 1) Validar token con Google
+    const verificationURL =
+      `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}` +
+      `&response=${recaptchaToken}`;
+    const recRes  = await fetch(verificationURL, { method: 'POST' });
+    const recJson = await recRes.json();
+    if (!recJson.success) {
+      return res.status(401).json({ error: 'Verificación reCAPTCHA fallida' });
+    }
+
+    // 2) Descifrar usuario
     const username = crypto.privateDecrypt(
       {
         key: PRIVATE_KEY,
         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
         oaepHash: 'sha256'
       },
-      Buffer.from(encUser,'base64')
+      Buffer.from(encUser, 'base64')
     ).toString('utf8');
 
-    // descifra contraseña
+    // 3) Descifrar contraseña
     const password = crypto.privateDecrypt(
       {
         key: PRIVATE_KEY,
         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
         oaepHash: 'sha256'
       },
-      Buffer.from(encPass,'base64')
+      Buffer.from(encPass, 'base64')
     ).toString('utf8');
 
-    // busca en BD
+    // 4) Buscar usuario en BD
     const user = await User.findOne({ username });
     if (!user) {
       return res.status(401).json({ error: 'Usuario no encontrado' });
     }
 
-    // valida
+    // 5) Validar contraseña
     const ok = user.password.startsWith('$2')
       ? await bcrypt.compare(password, user.password)
       : password === user.password;
-
     if (!ok) {
       return res.status(401).json({ error: 'Contraseña incorrecta' });
     }
 
-    // todo bien → devuelve rol
+    // 6) Éxito → devolver rol
     res.json({ rol: user.role });
 
   } catch (err) {
@@ -100,7 +115,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// CRUD especies
+// CRUD de especies
 app.get('/especies', async (req, res) => {
   try {
     res.json(await Species.find());
@@ -109,6 +124,7 @@ app.get('/especies', async (req, res) => {
     res.status(500).json({ error: 'Error interno' });
   }
 });
+
 app.post('/especies', upload.single('imagen'), async (req, res) => {
   try {
     const data = {
@@ -125,6 +141,7 @@ app.post('/especies', upload.single('imagen'), async (req, res) => {
     res.status(500).json({ error: 'Error interno' });
   }
 });
+
 app.put('/especies/:id', upload.single('imagen'), async (req, res) => {
   try {
     const update = { ...req.body };
@@ -136,6 +153,7 @@ app.put('/especies/:id', upload.single('imagen'), async (req, res) => {
     res.status(500).json({ error: 'Error interno' });
   }
 });
+
 app.delete('/especies/:id', async (req, res) => {
   try {
     await Species.findByIdAndDelete(req.params.id);
@@ -146,10 +164,11 @@ app.delete('/especies/:id', async (req, res) => {
   }
 });
 
-// página principal
+// Servir página principal
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname,'public','peces.html'));
 });
+
 app.listen(PORT, () => {
   console.log(`🚀 Servidor escuchando en puerto ${PORT}`);
 });
