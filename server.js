@@ -8,6 +8,7 @@ const mongoose   = require('mongoose');
 const bodyParser = require('body-parser');
 const multer     = require('multer');
 const fetch 	 = require('node-fetch');
+const axios      = require('axios');
 
 // Cloudinary
 const cloudinary            = require('cloudinary').v2;

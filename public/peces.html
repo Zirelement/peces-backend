@@ -12,29 +12,24 @@
       transition: all 0.3s ease-in-out;
       box-shadow: 0 8px 20px rgba(0,0,0,0.2);
     }
-    .card-img-top {
-      height: 220px;
-      object-fit: contain;
-    }
-    .navbar-brand {
-      font-weight: bold;
-    }
-    .carousel img {
-      max-height: 450px;
-      object-fit: cover;
-    }
-    body {
-      scroll-behavior: smooth;
-    }
+    .card-img-top { height: 220px; object-fit: contain; }
+    .navbar-brand { font-weight: bold; }
+    .carousel img { max-height: 450px; object-fit: cover; }
+    body { scroll-behavior: smooth; }
   </style>
+
+  <!-- JSEncrypt para RSA -->
   <script src="https://cdn.jsdelivr.net/npm/jsencrypt@3.0.0-rc.1/bin/jsencrypt.min.js"></script>
+  <!-- reCAPTCHA v2 -->
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body class="bg-light">
+
   <!-- NAVBAR -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-success sticky-top shadow">
     <div class="container">
       <a class="navbar-brand" href="#">🐟 PecesPeruanos</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navBarContent">
+      <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navBarContent">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navBarContent">
@@ -60,6 +55,7 @@
   <!-- CARRUSEL -->
   <div id="carouselRios" class="carousel slide mt-4 shadow" data-bs-ride="carousel">
     <div class="carousel-inner">
+      <!-- Item Amazonas -->
       <div class="carousel-item active">
         <a href="rios/amazonas.html">
           <img src="https://peces-peruanos-app-8a65d063f3d4.herokuapp.com/images/amazonas.jpg" class="d-block w-100" alt="Río Amazonas">
@@ -69,6 +65,7 @@
           <p>El río más caudaloso del mundo y hogar de muchas especies como el paiche.</p>
         </div>
       </div>
+      <!-- Item Ucayali -->
       <div class="carousel-item">
         <a href="rios/ucayali.html">
           <img src="https://peces-peruanos-app-8a65d063f3d4.herokuapp.com/images/ucayali.jpg" class="d-block w-100" alt="Río Ucayali">
@@ -78,6 +75,7 @@
           <p>Fluye desde la sierra y alimenta la Amazonía peruana.</p>
         </div>
       </div>
+      <!-- Item Marañón -->
       <div class="carousel-item">
         <a href="rios/maranon.html">
           <img src="https://peces-peruanos-app-8a65d063f3d4.herokuapp.com/images/maranon.jpg" class="d-block w-100" alt="Río Marañón">
@@ -88,19 +86,17 @@
         </div>
       </div>
     </div>
-    <button class="carousel-control-prev" type="button" data-bs-target="#carouselRios" data-bs-slide="prev">
+    <button class="carousel-control-prev" data-bs-target="#carouselRios" data-bs-slide="prev">
       <span class="carousel-control-prev-icon"></span>
     </button>
-    <button class="carousel-control-next" type="button" data-bs-target="#carouselRios" data-bs-slide="next">
+    <button class="carousel-control-next" data-bs-target="#carouselRios" data-bs-slide="next">
       <span class="carousel-control-next-icon"></span>
     </button>
   </div>
 
   <!-- GALERÍA DE PECES -->
   <div id="galeria" class="container mt-5">
-    <div class="row" id="contenedor-peces">
-      <!-- Tarjetas de peces se insertan aquí dinámicamente -->
-    </div>
+    <div class="row" id="contenedor-peces"></div>
   </div>
 
   <!-- FOOTER -->
@@ -109,12 +105,10 @@
   </footer>
 
   <!-- MODAL LOGIN -->
-   <div class="modal fade" id="loginModal" tabindex="-1">
+  <div class="modal fade" id="loginModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
-        <form id="login-form">             
-		<p id="recaptcha-msg" class="text-danger small"></p>
-        
+        <form id="login-form">
           <div class="modal-header">
             <h5 class="modal-title">Acceder</h5>
             <button class="btn-close" data-bs-dismiss="modal"></button>
@@ -122,11 +116,13 @@
           <div class="modal-body">
             <input type="text" id="username" class="form-control mb-2" placeholder="Usuario" required>
             <input type="password" id="password" class="form-control mb-2" placeholder="Contraseña" required>
-            <p id="login-msg" class="text-danger"></p>
+            <p id="login-msg" class="text-danger mb-0"></p>
           </div>
-          <div class="g-recaptcha mb-2" data-sitekey="TU_SITE_KEY_AQUI"></div>
-			<p id="recaptcha-msg" class="text-danger small"></p>
-          
+          <!-- reCAPTCHA widget -->
+          <div class="px-3">
+            <div class="g-recaptcha" data-sitekey="6Lc0-Y8rAAAAAPSgjDPQzpe9_tGXJNhKBVOEM6JD"></div>
+            <p id="recaptcha-msg" class="text-danger small mt-1"></p>
+          </div>
           <div class="modal-footer">
             <button class="btn btn-success w-100" type="submit">Iniciar sesión</button>
           </div>
@@ -138,30 +134,29 @@
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-   <!-- JS dinámico: galería + RSA‑OAEP + login -->
+  <!-- JS dinámico: galería + RSA‑OAEP + login con reCAPTCHA -->
   <script>
     const baseURL = location.origin;
-    // — — —  Galería  — — — 
-    function resolverImagen(imagen_url) {
-      if (!imagen_url) return `${baseURL}/images/default.png`;
-      return imagen_url.startsWith('http') 
-        ? imagen_url 
-        : imagen_url.startsWith('/') 
-          ? baseURL + imagen_url 
-          : `${baseURL}/images/${imagen_url}`;
+
+    // ─── Galería de peces ─────────────────────────────────────────
+    function resolverImagen(url) {
+      if (!url) return `${baseURL}/images/default.png`;
+      if (url.startsWith('http')) return url;
+      if (url.startsWith('/')) return baseURL + url;
+      return `${baseURL}/images/${url}`;
     }
 
     async function cargarPeces() {
+      const cont = document.getElementById('contenedor-peces');
       try {
         const res  = await fetch(`${baseURL}/especies`);
-        const data = await res.json();
-        const cont = document.getElementById("contenedor-peces");
-        cont.innerHTML = '';
-        if (!data.length) {
+        const peces = await res.json();
+        if (!peces.length) {
           cont.innerHTML = `<p class="text-muted text-center">No hay peces registrados aún.</p>`;
           return;
         }
-        data.filter(p => p.enabled !== false).forEach(pez => {
+        cont.innerHTML = '';
+        peces.filter(p => p.enabled !== false).forEach(pez => {
           const slug = pez.nombre_comun.toLowerCase().replace(/\s+/g,'-') + '.html';
           const img  = resolverImagen(pez.imagen_url);
           cont.innerHTML += `
@@ -183,90 +178,79 @@
             </div>`;
         });
       } catch (err) {
-        console.error("Error al cargar peces:", err);
-        document.getElementById("contenedor-peces").innerHTML =
-          `<p class="text-danger">Error al cargar los datos. Intenta más tarde.</p>`;
+        console.error('Error al cargar peces:', err);
+        cont.innerHTML = `<p class="text-danger text-center">Error al cargar los datos.</p>`;
       }
     }
 
-    // --- Cifrado RSA‑OAEP/SHA‑256 con Web Crypto API ---
+    // ─── Cifrado RSA‑OAEP/SHA‑256 ───────────────────────────────────
     async function encryptOAEP(text) {
-      const pem = await fetch('/api/publicKey').then(r => r.text());
-      const b64 = pem.replace(/-----.*?KEY-----|\s+/g,'');
-      const keyBuf = Uint8Array.from(atob(b64), c=>c.charCodeAt(0)).buffer;
-      const cryptoKey = await window.crypto.subtle.importKey(
-        'spki', keyBuf,
-        { name:'RSA-OAEP', hash:'SHA-256' },
+      const pem  = await fetch('/api/publicKey').then(r => r.text());
+      const b64  = pem.replace(/-----.*?KEY-----|\s+/g, '');
+      const buf  = Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer;
+      const key  = await crypto.subtle.importKey(
+        'spki', buf,
+        { name: 'RSA-OAEP', hash: 'SHA-256' },
         false, ['encrypt']
       );
-      const encBuf = await window.crypto.subtle.encrypt(
-        { name:'RSA-OAEP' }, cryptoKey,
+      const enc  = await crypto.subtle.encrypt(
+        { name: 'RSA-OAEP' }, key,
         new TextEncoder().encode(text)
       );
-      return btoa(String.fromCharCode(...new Uint8Array(encBuf)));
+      return btoa(String.fromCharCode(...new Uint8Array(enc)));
     }
 
- // --- Manejo de login (Único listener) ---
-    document.getElementById('login-form')
-      .addEventListener('submit', async e => {
-        e.preventDefault();
-        // limpiar mensajes
-        document.getElementById('login-msg').textContent = '';
-        document.getElementById('recaptcha-msg').textContent = '';
+    // ─── Manejo de login con reCAPTCHA ─────────────────────────────
+    document.getElementById('login-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      document.getElementById('login-msg').textContent    = '';
+      document.getElementById('recaptcha-msg').textContent = '';
 
-        // 1) Verificar que el usuario haya marcado el reCAPTCHA
-        const recaptchaToken = grecaptcha.getResponse();
-        if (!recaptchaToken) {
-          document.getElementById('recaptcha-msg').textContent =
-            'Por favor marca "No soy un robot".';
+      // 1) Verificar reCAPTCHA
+      const token = grecaptcha.getResponse();
+      if (!token) {
+        document.getElementById('recaptcha-msg').textContent = 'Por favor marca "No soy un robot".';
+        return;
+      }
+
+      // 2) Leer credenciales
+      const usr = document.getElementById('username').value.trim();
+      const pwd = document.getElementById('password').value;
+
+      try {
+        // 3) Cifrar con RSA‑OAEP
+        const encUser = await encryptOAEP(usr);
+        const encPass = await encryptOAEP(pwd);
+
+        // 4) Enviar al backend junto con el token
+        const res = await fetch(`${baseURL}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: encUser, password: encPass, recaptchaToken: token })
+        });
+        const data = await res.json();
+
+        // 5) Errores
+        if (!res.ok) {
+          document.getElementById('login-msg').textContent = data.error;
+          grecaptcha.reset();
           return;
         }
 
-        // 2) Obtener credenciales en claro
-        const usr = document.getElementById('username').value.trim();
-        const pwd = document.getElementById('password').value;
-
-        try {
-          // 3) Cifrar usuario y contraseña
-          const encUser = await encryptOAEP(usr);
-          const encPass = await encryptOAEP(pwd);
-
-          // 4) Petición al backend, incluyendo el recaptchaToken
-          const res = await fetch(`${baseURL}/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              username: encUser,
-              password: encPass,
-              recaptchaToken
-            })
-          });
-          const data = await res.json();
-
-          // 5) Manejo de errores: reCAPTCHA inválido o credenciales
-          if (!res.ok) {
-            document.getElementById('login-msg').textContent = data.error;
-            // reset del widget para que pueda volver a marcar
-            grecaptcha.reset();
-            return;
-          }
-
-          // 6) Redirección según rol
-          if (data.rol === 'admin' || data.rol === 'analista') {
-            sessionStorage.setItem('rol', data.rol);
-            window.location.href = `${baseURL}/admin.html`;
-          } else {
-            window.location.href = `${baseURL}/peces.html`;
-          }
-
-        } catch (err) {
-          console.error('Error en login:', err);
-          document.getElementById('login-msg').textContent = 'Error de conexión';
-          grecaptcha.reset();
+        // 6) Redirigir según rol
+        if (['admin','analista'].includes(data.rol)) {
+          sessionStorage.setItem('rol', data.rol);
+          window.location.href = `${baseURL}/admin.html`;
+        } else {
+          window.location.href = `${baseURL}/peces.html`;
         }
-      });
 
-
+      } catch (err) {
+        console.error('Error en login:', err);
+        document.getElementById('login-msg').textContent = 'Error de conexión';
+        grecaptcha.reset();
+      }
+    });
     // --- Galería ---
     function resolverImagen(url) {
       if (!url) return `${baseURL}/images/default.png`;
@@ -311,8 +295,6 @@
     }
     window.onload = cargarPeces;
   </script>
-  <!-- Carga del script de reCAPTCHA con tu SITE_KEY -->
-<script src="https://www.google.com/recaptcha/api.js?render=explicit" async defer></script>
   
 </body>
 </html>
