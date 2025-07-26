@@ -111,6 +111,10 @@
   <div class="modal fade" id="loginModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
+        
+    <script src="https://cdn.jsdelivr.net/npm/jsencrypt@3.0.0-rc.1/bin/jsencrypt.min.js"></script>
+        
+        
         <form id="login-form">
           <div class="modal-header">
             <h5 class="modal-title">Acceder</h5>
@@ -135,7 +139,7 @@
   <!-- JS dinámico -->
   <script>
     const baseURL = location.origin;
-
+    /* — — —  Galería  — — —  */
     function resolverImagen(imagen_url) {
       if (!imagen_url) return `${baseURL}/images/default.png`;
       if (imagen_url.startsWith('http')) return imagen_url;
