@@ -137,7 +137,7 @@ app.delete('/especies/:id', async (req,res)=>{
 });
 
 app.get('/', (req,res)=>{
-  res.sendFile(path.join(__dirname,'public','index.html'));
+  res.sendFile(path.join(__dirname,'public','peces.html'));
 });
 
 app.listen(PORT, ()=>console.log(`🚀 Servidor en puerto ${PORT}`));
