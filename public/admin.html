@@ -4,100 +4,104 @@
   <meta charset="UTF-8">
   <title>Panel de Administración</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  >
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+    rel="stylesheet"
+  >
   <style>
     body { background-color: #f8f9fa; }
     .card-img-top { height: 200px; object-fit: contain; }
     .btn-custom { transition: all 0.3s ease-in-out; border-radius: 8px; }
     .btn-custom:hover { transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
-    .btn-success { background-color: #198754; border-color: #198754; }
-    .btn-danger  { background-color: #dc3545; border-color: #dc3545; }
-    .btn-warning { background-color: #ffc107; border-color: #ffc107; }
-    .top-buttons { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    .top-buttons { display: flex; justify-content: space-between; margin-bottom: 20px; }
   </style>
 </head>
 <body class="bg-light">
   <div class="container mt-4">
+
     <div class="top-buttons">
       <a href="peces.html" class="btn btn-outline-primary btn-custom">← Regresar a galería</a>
-      <button onclick="window.location.href='peces.html'" class="btn btn-outline-danger btn-custom">Cerrar sesión</button>
+      <button id="btn-logout" class="btn btn-outline-danger btn-custom">Cerrar sesión</button>
     </div>
+
     <h1 class="text-center text-success mb-4">Panel de Administración 🛠️</h1>
+
     <div class="text-center mb-3">
-      <button id="btn-agregar" class="btn btn-success btn-custom" data-bs-toggle="modal" data-bs-target="#modalAgregarPez">+ Agregar nuevo pez</button>
+      <button
+        id="btn-agregar"
+        class="btn btn-success btn-custom"
+        data-bs-toggle="modal"
+        data-bs-target="#modalAgregarPez">
+        + Agregar nuevo pez
+      </button>
     </div>
 
-    <!-- Modal Agregar -->
+    <!-- Modales -->
     <div class="modal fade" id="modalAgregarPez" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <form id="form-agregar">
-            <div class="modal-header">
-              <h5 class="modal-title">Agregar Pez</h5>
-              <button class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-              <input name="nombre_comun" class="form-control mb-2" placeholder="Nombre común" required>
-              <input name="nombre_cientifico" class="form-control mb-2" placeholder="Nombre científico" required>
-              <input name="familia" class="form-control mb-2" placeholder="Familia" required>
-              <input name="alimentacion" class="form-control mb-2" placeholder="Alimentación">
-              <input name="estado_conservacion" class="form-control mb-2" placeholder="Estado de conservación">
-              <input type="file" name="imagen" class="form-control mb-2" accept="image/*" required>
-              <p id="agregar-msg" class="text-danger"></p>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-success w-100" type="submit">Crear</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal Editar -->
-    <div class="modal fade" id="modalEditar" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <form id="form-editar">
-            <input type="hidden" name="_id">
-            <div class="modal-header">
-              <h5 class="modal-title">Editar Pez</h5>
-              <button class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-              <input name="nombre_comun" class="form-control mb-2" placeholder="Nombre común" required>
-              <input name="nombre_cientifico" class="form-control mb-2" placeholder="Nombre científico" required>
-              <input name="familia" class="form-control mb-2" placeholder="Familia" required>
-              <input name="alimentacion" class="form-control mb-2" placeholder="Alimentación">
-              <input name="estado_conservacion" class="form-control mb-2" placeholder="Estado de conservación">
-              <input type="file" name="imagen" class="form-control mb-2" accept="image/*">
-              <p id="editar-msg" class="text-danger"></p>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-warning w-100" type="submit">Actualizar</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal Eliminar -->
-    <div class="modal fade" id="modalEliminar" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
+      <div class="modal-dialog"><div class="modal-content">
+        <form id="form-agregar">
           <div class="modal-header">
-            <h5 class="modal-title">Eliminar Pez</h5>
+            <h5 class="modal-title">Agregar Pez</h5>
             <button class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <input type="hidden" id="idEliminar">
-            <p>¿Seguro que deseas eliminar <strong id="pezAEliminar"></strong>?</p>
+            <input name="nombre_comun" class="form-control mb-2" placeholder="Nombre común" required>
+            <input name="nombre_cientifico" class="form-control mb-2" placeholder="Nombre científico" required>
+            <input name="familia" class="form-control mb-2" placeholder="Familia" required>
+            <input name="alimentacion" class="form-control mb-2" placeholder="Alimentación">
+            <input name="estado_conservacion" class="form-control mb-2" placeholder="Estado de conservación">
+            <input type="file" name="imagen" class="form-control mb-2" accept="image/*" required>
+            <p id="agregar-msg" class="text-danger"></p>
           </div>
           <div class="modal-footer">
-            <button id="confirmar-eliminar" class="btn btn-danger w-100">Eliminar</button>
+            <button class="btn btn-success w-100" type="submit">Crear</button>
           </div>
+        </form>
+      </div></div>
+    </div>
+
+    <div class="modal fade" id="modalEditar" tabindex="-1">
+      <div class="modal-dialog"><div class="modal-content">
+        <form id="form-editar">
+          <input type="hidden" name="_id">
+          <div class="modal-header">
+            <h5 class="modal-title">Editar Pez</h5>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input name="nombre_comun" class="form-control mb-2" placeholder="Nombre común" required>
+            <input name="nombre_cientifico" class="form-control mb-2" placeholder="Nombre científico" required>
+            <input name="familia" class="form-control mb-2" placeholder="Familia" required>
+            <input name="alimentacion" class="form-control mb-2" placeholder="Alimentación">
+            <input name="estado_conservacion" class="form-control mb-2" placeholder="Estado de conservación">
+            <input type="file" name="imagen" class="form-control mb-2" accept="image/*">
+            <p id="editar-msg" class="text-danger"></p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-warning w-100" type="submit">Actualizar</button>
+          </div>
+        </form>
+      </div></div>
+    </div>
+
+    <div class="modal fade" id="modalEliminar" tabindex="-1">
+      <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Eliminar Pez</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-      </div>
+        <div class="modal-body">
+          <input type="hidden" id="idEliminar">
+          <p>¿Seguro que deseas eliminar <strong id="pezAEliminar"></strong>?</p>
+        </div>
+        <div class="modal-footer">
+          <button id="confirmar-eliminar" class="btn btn-danger w-100">Eliminar</button>
+        </div>
+      </div></div>
     </div>
 
     <h3 class="text-success mt-4">Especies actuales</h3>
@@ -105,18 +109,18 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-   <script>
+  <script>
     const baseURL = location.origin;
     const rol     = sessionStorage.getItem('rol') || 'invitado';
 
-    // Redirijo si no es admin ni analista
+    // Si no es admin ni analista, lo mandamos a galería
     if (!['admin','analista'].includes(rol)) {
       location.replace('peces.html');
     }
 
-    // Sólo ADMIN ve el botón de agregar
+    // Sólo admin ve “Agregar”
     if (rol !== 'admin') {
-      document.getElementById('btn-add').style.display = 'none';
+      document.getElementById('btn-agregar').style.display = 'none';
     }
 
     // Cerrar sesión
@@ -126,17 +130,15 @@
         location.replace('peces.html');
       });
 
-    // Resuelve URL de imagen
+    // Resuelve URL de imagen almacenada
     function resolverImagen(url) {
       if (!url) return `${baseURL}/images/default.png`;
-      return url.startsWith('http')
-        ? url
-        : url.startsWith('/')
-          ? baseURL + url
-          : `${baseURL}/images/${url}`;
+      return url.startsWith('http') ? url
+           : url.startsWith('/') ? baseURL + url
+           : `${baseURL}/images/${url}`;
     }
 
-    // Renderiza las tarjetas
+    // Renderiza tarjetas al DOM
     function renderEspecies(especies) {
       const cont = document.getElementById('admin-contenedor-peces');
       cont.innerHTML = '';
@@ -145,22 +147,22 @@
         cont.insertAdjacentHTML('beforeend', `
           <div class="col-md-4 mb-4">
             <div class="card shadow-sm h-100">
-              <img src="${imgUrl}" class="card-img-top" alt="${p.nombre_comun}">
+              <img src="${imgUrl}"
+                   class="card-img-top"
+                   alt="${p.nombre_comun}">
               <div class="card-body">
                 <h5>${p.nombre_comun}</h5>
-                <button
-                  class="btn btn-warning btn-custom me-2"
-                  onclick="abrirEditar('${p._id}')">
+                <button class="btn btn-warning btn-custom me-2"
+                        onclick="abrirEditar('${p._id}')">
                   <i class="bi bi-pencil"></i> Editar
                 </button>
                 ${
                   rol === 'admin'
-                  ? `<button
-                       class="btn btn-danger btn-custom"
-                       onclick="abrirEliminar('${p._id}','${p.nombre_comun}')">
+                  ? `<button class="btn btn-danger btn-custom"
+                              onclick="abrirEliminar('${p._id}','${p.nombre_comun}')">
                        <i class="bi bi-trash"></i> Eliminar
                      </button>`
-                  : ''
+                  : ``
                 }
               </div>
             </div>
@@ -169,11 +171,11 @@
       });
     }
 
-    // Carga desde el API
+    // Trae datos y pinta
     async function cargarPanel() {
       try {
         const res = await fetch(`${baseURL}/especies`);
-        if (!res.ok) throw new Error();
+        if (!res.ok) throw '';
         const data = await res.json();
         renderEspecies(data);
       } catch {
@@ -182,9 +184,8 @@
       }
     }
 
-    // Abrir modal Editar
+    // Abrir modal editar
     window.abrirEditar = async id => {
-      // obtengo datos del pez
       const res = await fetch(`${baseURL}/especies`);
       const peces = await res.json();
       const p = peces.find(x => x._id === id);
@@ -198,12 +199,11 @@
       new bootstrap.Modal(document.getElementById('modalEditar')).show();
     };
 
-    // Submit Editar
+    // Submit editar
     document.getElementById('form-editar')
       .addEventListener('submit', async e => {
         e.preventDefault();
-        const f = e.target;
-        const fd = new FormData(f);
+        const f = e.target, fd = new FormData(f);
         try {
           const res = await fetch(
             `${baseURL}/especies/${f._id.value}`,
@@ -217,14 +217,14 @@
         }
       });
 
-    // Abrir modal Eliminar
+    // Abrir modal eliminar
     window.abrirEliminar = (id, nombre) => {
-      document.getElementById('idEliminar').value   = id;
+      document.getElementById('idEliminar').value     = id;
       document.getElementById('pezAEliminar').textContent = nombre;
       new bootstrap.Modal(document.getElementById('modalEliminar')).show();
     };
 
-    // Confirmar Eliminar
+    // Confirmar eliminar
     document.getElementById('confirmar-eliminar')
       .addEventListener('click', async () => {
         try {
@@ -250,7 +250,7 @@
           if (!res.ok) throw '';
           bootstrap.Modal.getInstance(document.getElementById('modalAgregarPez')).hide();
           e.target.reset();
-          cargarPanel();
+          cargarPanel();            // <-- antes llamabas a cargarPeces()
         } catch {
           document.getElementById('agregar-msg').textContent = 'Error al agregar pez';
         }
