@@ -47,49 +47,58 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname,'public')));
 
-// entregamos la clave pública al frontend
+// Entregamos la pública al frontend
 app.get('/api/publicKey', (req, res) => {
   res.type('text').send(PUBLIC_KEY);
 });
 
-// LOGIN: descifrado RSA-OAEP/SHA-256 + validación reCAPTCHA v2
+// LOGIN: descifrado RSA-OAEP/SHA-256 + validación de reCAPTCHA v2
 app.post('/login', async (req, res) => {
   try {
     const { username: encUser, password: encPass, recaptchaToken } = req.body;
 
-    // 0) Verificar token de reCAPTCHA
+    // 0) Verificar que venga el token de reCAPTCHA
     if (!recaptchaToken) {
       return res.status(400).json({ error: 'reCAPTCHA no verificado' });
     }
 
-    // 1) Validar token con Google
-    const verificationURL =
-      `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}` +
-      `&response=${recaptchaToken}`;
-    const recRes  = await fetch(verificationURL, { method: 'POST' });
-    const recJson = await recRes.json();
-    if (!recJson.success) {
-      return res.status(401).json({ error: 'Verificación reCAPTCHA fallida' });
+    // 1) Validar token en servidor con Google (POST form)
+    const params = new URLSearchParams();
+    params.append('secret', process.env.RECAPTCHA_SECRET_KEY);
+    params.append('response', recaptchaToken);
+
+    const recaptchaRes  = await fetch(
+      'https://www.google.com/recaptcha/api/siteverify',
+      {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body:     params.toString()
+      }
+    );
+    const recaptchaJson = await recaptchaRes.json();
+    console.log('reCAPTCHA response:', recaptchaJson);
+    if (!recaptchaJson.success) {
+      return res.status(401).json({ error: 'Fallo en verificación reCAPTCHA' });
     }
 
     // 2) Descifrar usuario
     const username = crypto.privateDecrypt(
       {
-        key: PRIVATE_KEY,
+        key:     PRIVATE_KEY,
         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-        oaepHash: 'sha256'
+        oaepHash:'sha256'
       },
-      Buffer.from(encUser, 'base64')
+      Buffer.from(encUser,'base64')
     ).toString('utf8');
 
     // 3) Descifrar contraseña
     const password = crypto.privateDecrypt(
       {
-        key: PRIVATE_KEY,
+        key:     PRIVATE_KEY,
         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-        oaepHash: 'sha256'
+        oaepHash:'sha256'
       },
-      Buffer.from(encPass, 'base64')
+      Buffer.from(encPass,'base64')
     ).toString('utf8');
 
     // 4) Buscar usuario en BD
@@ -98,7 +107,7 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Usuario no encontrado' });
     }
 
-    // 5) Validar contraseña
+    // 5) Validar contraseña (bcrypt o texto plano)
     const ok = user.password.startsWith('$2')
       ? await bcrypt.compare(password, user.password)
       : password === user.password;
@@ -106,7 +115,7 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Contraseña incorrecta' });
     }
 
-    // 6) Éxito → devolver rol
+    // 6) Éxito: devolver rol
     res.json({ rol: user.role });
 
   } catch (err) {
@@ -115,7 +124,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// CRUD de especies
+// CRUD especies
 app.get('/especies', async (req, res) => {
   try {
     res.json(await Species.find());
@@ -164,7 +173,7 @@ app.delete('/especies/:id', async (req, res) => {
   }
 });
 
-// Servir página principal
+// Página principal
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname,'public','peces.html'));
 });
@@ -172,4 +181,3 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Servidor escuchando en puerto ${PORT}`);
 });
-
