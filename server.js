@@ -7,6 +7,7 @@ const bcrypt     = require('bcrypt');
 const mongoose   = require('mongoose');
 const bodyParser = require('body-parser');
 const multer     = require('multer');
+const fetch 	 = require('node-fetch');
 
 // Cloudinary
 const cloudinary            = require('cloudinary').v2;
@@ -51,47 +52,61 @@ app.get('/api/publicKey', (req, res) => {
   res.type('text').send(PUBLIC_KEY);
 });
 
-// LOGIN: descifrado RSA-OAEP/SHA-256
+// LOGIN: descifrado RSA-OAEP/SHA-256 + validación de reCAPTCHA v2
 app.post('/login', async (req, res) => {
   try {
-    const { username: encUser, password: encPass } = req.body;
+    const { username: encUser, password: encPass, recaptchaToken } = req.body;
 
-    // descifra usuario
+    // 0) Verificar que venga el token de reCAPTCHA
+    if (!recaptchaToken) {
+      return res.status(400).json({ error: 'reCAPTCHA no verificado' });
+    }
+
+    // 1) Validar token en servidor con Google
+    const verificationURL =
+      `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}` +
+      `&response=${recaptchaToken}`;
+    const recaptchaRes = await fetch(verificationURL, { method: 'POST' });
+    const recaptchaJson = await recaptchaRes.json();
+    if (!recaptchaJson.success) {
+      return res.status(401).json({ error: 'Fallo en verificación reCAPTCHA' });
+    }
+
+    // 2) Descifrar usuario
     const username = crypto.privateDecrypt(
       {
         key: PRIVATE_KEY,
         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
         oaepHash: 'sha256'
       },
-      Buffer.from(encUser,'base64')
+      Buffer.from(encUser, 'base64')
     ).toString('utf8');
 
-    // descifra contraseña
+    // 3) Descifrar contraseña
     const password = crypto.privateDecrypt(
       {
         key: PRIVATE_KEY,
         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
         oaepHash: 'sha256'
       },
-      Buffer.from(encPass,'base64')
+      Buffer.from(encPass, 'base64')
     ).toString('utf8');
 
-    // busca en BD
+    // 4) Buscar usuario en BD
     const user = await User.findOne({ username });
     if (!user) {
       return res.status(401).json({ error: 'Usuario no encontrado' });
     }
 
-    // valida
+    // 5) Validar contraseña (bcrypt o texto plano)
     const ok = user.password.startsWith('$2')
       ? await bcrypt.compare(password, user.password)
       : password === user.password;
-
     if (!ok) {
       return res.status(401).json({ error: 'Contraseña incorrecta' });
     }
 
-    // todo bien → devuelve rol
+    // 6) Éxito: devolver rol
     res.json({ rol: user.role });
 
   } catch (err) {

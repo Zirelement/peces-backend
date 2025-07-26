@@ -112,7 +112,9 @@
    <div class="modal fade" id="loginModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
-        <form id="login-form">
+        <form id="login-form">             
+		<p id="recaptcha-msg" class="text-danger small"></p>
+        
           <div class="modal-header">
             <h5 class="modal-title">Acceder</h5>
             <button class="btn-close" data-bs-dismiss="modal"></button>
@@ -122,6 +124,9 @@
             <input type="password" id="password" class="form-control mb-2" placeholder="Contraseña" required>
             <p id="login-msg" class="text-danger"></p>
           </div>
+          <div class="g-recaptcha mb-2" data-sitekey="TU_SITE_KEY_AQUI"></div>
+			<p id="recaptcha-msg" class="text-danger small"></p>
+          
           <div class="modal-footer">
             <button class="btn btn-success w-100" type="submit">Iniciar sesión</button>
           </div>
@@ -205,30 +210,48 @@
     document.getElementById('login-form')
       .addEventListener('submit', async e => {
         e.preventDefault();
+        // limpiar mensajes
         document.getElementById('login-msg').textContent = '';
+        document.getElementById('recaptcha-msg').textContent = '';
+
+        // 1) Verificar que el usuario haya marcado el reCAPTCHA
+        const recaptchaToken = grecaptcha.getResponse();
+        if (!recaptchaToken) {
+          document.getElementById('recaptcha-msg').textContent =
+            'Por favor marca "No soy un robot".';
+          return;
+        }
+
+        // 2) Obtener credenciales en claro
         const usr = document.getElementById('username').value.trim();
         const pwd = document.getElementById('password').value;
 
         try {
-          // 1) Cifrar usuario y contraseña
+          // 3) Cifrar usuario y contraseña
           const encUser = await encryptOAEP(usr);
           const encPass = await encryptOAEP(pwd);
 
-          // 2) Petición al backend
+          // 4) Petición al backend, incluyendo el recaptchaToken
           const res = await fetch(`${baseURL}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: encUser, password: encPass })
+            body: JSON.stringify({
+              username: encUser,
+              password: encPass,
+              recaptchaToken
+            })
           });
           const data = await res.json();
 
-          // 3) Manejo de errores
+          // 5) Manejo de errores: reCAPTCHA inválido o credenciales
           if (!res.ok) {
             document.getElementById('login-msg').textContent = data.error;
+            // reset del widget para que pueda volver a marcar
+            grecaptcha.reset();
             return;
           }
 
-          // 4) Redirección según rol
+          // 6) Redirección según rol
           if (data.rol === 'admin' || data.rol === 'analista') {
             sessionStorage.setItem('rol', data.rol);
             window.location.href = `${baseURL}/admin.html`;
@@ -237,11 +260,12 @@
           }
 
         } catch (err) {
-          // 5) Error de conexión o de JS
           console.error('Error en login:', err);
           document.getElementById('login-msg').textContent = 'Error de conexión';
+          grecaptcha.reset();
         }
       });
+
 
     // --- Galería ---
     function resolverImagen(url) {
@@ -287,5 +311,8 @@
     }
     window.onload = cargarPeces;
   </script>
+  <!-- Carga del script de reCAPTCHA con tu SITE_KEY -->
+<script src="https://www.google.com/recaptcha/api.js?render=explicit" async defer></script>
+  
 </body>
 </html>
