@@ -61,11 +61,15 @@ app.post('/login', async (req, res) => {
     const bufUser = Buffer.from(encUser, 'base64');
     const bufPass = Buffer.from(encPass, 'base64');
 
-    // PKCS#1 v1.5
-    const username = crypto.privateDecrypt(
-      { key: PRIVATE_KEY, padding: crypto.constants.RSA_PKCS1_PADDING },
-      bufUser
-    ).toString('utf8');
+    // privateDecrypt con OAEP
+	 const username = crypto.privateDecrypt(
+	   {
+	     key: PRIVATE_KEY,
+	     padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+	     oaepHash: 'sha256'
+	   },
+	   Buffer.from(encUser, 'base64')
+	 ).toString('utf8');
     const password = crypto.privateDecrypt(
       { key: PRIVATE_KEY, padding: crypto.constants.RSA_PKCS1_PADDING },
       bufPass

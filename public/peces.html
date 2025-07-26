@@ -186,44 +186,58 @@
       }
     }
 
- // — LOGIN CIFRADO RSA —
-    async function fetchPublicKey() {
-      const res = await fetch(baseURL + '/api/publicKey');
-      if (!res.ok) throw new Error('No pude cargar la clave pública');
-      return res.text();
-    }
+ // — OAEP, así que usa la Web Crypto API —
+    async function encryptOAEP(text) {
+    // 1) Obtener PEM de la pública
+    const pem = await fetch('/api/publicKey').then(r=>r.text());
+    // 2) Convertir PEM → ArrayBuffer
+    const b64 = pem
+      .replace('-----BEGIN PUBLIC KEY-----','')
+      .replace('-----END PUBLIC KEY-----','')
+      .replace(/\s+/g,'');
+    const keyBuf = Uint8Array.from(atob(b64), c=>c.charCodeAt(0)).buffer;
+    // 3) Importar clave
+    const cryptoKey = await window.crypto.subtle.importKey(
+      'spki',
+      keyBuf,
+      { name: 'RSA-OAEP', hash: 'SHA-256' },
+      false,
+      ['encrypt']
+    );
+    // 4) Cifrar y base64
+    const encBuf = await window.crypto.subtle.encrypt(
+      { name: 'RSA-OAEP' },
+      cryptoKey,
+      new TextEncoder().encode(text)
+    );
+    return btoa(String.fromCharCode(...new Uint8Array(encBuf)));
+  }
 
-    document.getElementById('login-form')
-      .addEventListener('submit', async e => {
-        e.preventDefault();
-        document.getElementById('login-msg').textContent = '';
-        const usr = document.getElementById('username').value.trim();
-        const pwd = document.getElementById('password').value;
+  document.getElementById('login-form')
+    .addEventListener('submit', async e => {
+      e.preventDefault();
+      const usr = document.getElementById('username').value;
+      const pwd = document.getElementById('password').value;
 
-        try {
-          const pubKey = await fetchPublicKey();
-          const crypt = new JSEncrypt();
-          crypt.setPublicKey(pubKey);
+      try {
+        // cifrar con OAEP en lugar de JSEncrypt
+        const encUser = await encryptOAEP(usr);
+        const encPass = await encryptOAEP(pwd);
 
-          const encUser = window.btoa( crypt.encrypt(usr) );
-          const encPass = window.btoa( crypt.encrypt(pwd) );
-
-          const res = await fetch(baseURL + '/login', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ username:encUser, password:encPass })
-          });
-          const data = await res.json();
-          if (!res.ok) {
-            document.getElementById('login-msg').textContent = data.error;
-            return;
-          }
-          if (data.rol==='admin') window.location.href= baseURL+'/admin.html';
-          else window.location.reload();
-        } catch (err) {
-          document.getElementById('login-msg').textContent = err.message;
+        const res = await fetch('/login', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ username: encUser, password: encPass })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          return document.getElementById('login-msg').textContent = data.error;
         }
-      });
+        // redirección…
+      } catch (err) {
+        document.getElementById('login-msg').textContent = err.message;
+      }
+    });
 
     window.onload = cargarPeces;
   </script>
