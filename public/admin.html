@@ -18,6 +18,11 @@
     .btn-custom { transition: all 0.3s ease-in-out; border-radius: 8px; }
     .btn-custom:hover { transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
     .top-buttons { display: flex; justify-content: space-between; margin-bottom: 20px; }
+    .form-group { margin-bottom: 1rem; }
+	.form-group label { font-weight: bold; display: block; margin-bottom: .25rem; }
+	.form-control { width: 100%; padding: .5rem; border: 1px solid #ccc; border-radius: .25rem; }
+	.text-error { color: #c00; }
+    
   </style>
 </head>
 <body class="bg-light">
@@ -74,10 +79,30 @@
           </div>
           <div class="modal-body">
             <input name="nombre_comun" class="form-control mb-2" placeholder="Nombre común" required>
+            <div class="form-group">
+  				<label for="nombre_comun">Nombre común</label>
+  				<input id="nombre_comun"   name="nombre_comun"   type="text" placeholder="Ej. Boquichico" class="form-control">
+			</div>
             <input name="nombre_cientifico" class="form-control mb-2" placeholder="Nombre científico" required>
+            <div class="form-group">
+  				<label for="nombre_cientifico">Nombre cientifico</label>
+  				<input id="nombre_cientifico"   name="nombre_cientifico"   type="text" placeholder="Ej. Prochilodus nigricans" class="form-control">
+			</div>
             <input name="familia" class="form-control mb-2" placeholder="Familia" required>
+            <div class="form-group">
+  				<label for="familia">Familia</label>
+  				<input id="familia"   name="familia"   type="text" placeholder="Ej. Prochilodontidae" class="form-control">
+			</div>
             <input name="alimentacion" class="form-control mb-2" placeholder="Alimentación">
+            <div class="form-group">
+  				<label for="alimentacion">Alimentacion</label>
+  				<input id="alimentacion"   name="alimentacion"   type="text" placeholder="Ej. Omnívora" class="form-control">
+			</div>
             <input name="estado_conservacion" class="form-control mb-2" placeholder="Estado de conservación">
+            <div class="form-group">
+  				<label for="estado_conservacion">Estado de conservacion</label>
+  				<input id="estado_conservacion"   name="estado_conservacion"   type="text" placeholder="Ej. Preocupación menor" class="form-control">
+			</div>
             <input type="file" name="imagen" class="form-control mb-2" accept="image/*">
             <p id="editar-msg" class="text-danger"></p>
           </div>
@@ -199,23 +224,43 @@
       new bootstrap.Modal(document.getElementById('modalEditar')).show();
     };
 
-    // Submit editar
-    document.getElementById('form-editar')
-      .addEventListener('submit', async e => {
-        e.preventDefault();
-        const f = e.target, fd = new FormData(f);
-        try {
-          const res = await fetch(
-            `${baseURL}/especies/${f._id.value}`,
-            { method: 'PUT', body: fd }
-          );
-          if (!res.ok) throw '';
-          bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
-          cargarPanel();
-        } catch {
-          document.getElementById('editar-msg').textContent = 'Error al actualizar';
-        }
-      });
+ // Submit editar
+      document.getElementById('form-editar')
+        .addEventListener('submit', async e => {
+          e.preventDefault();
+          const f = e.target;
+          // Construimos el payload a partir de los inputs
+          const payload = {
+            nombre_comun:       f.nombre_comun.value,
+            nombre_cientifico:  f.nombre_cientifico.value,
+            familia:            f.familia.value,
+            alimentacion:       f.alimentacion.value,
+            estado_conservacion:f.estado_conservacion.value
+          };
+          try {
+            const res = await fetch(
+              `${baseURL}/especies/${f._id.value}`,
+              {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              }
+            );
+            const data = await res.json();
+            if (!res.ok) {
+              // Mostrar el mensaje concreto que envía el servidor
+              document.getElementById('editar-msg').textContent = data.message;
+              console.error('Error al actualizar:', data.code, data.message);
+              return;
+            }
+            // Éxito: cerramos modal y recargamos el panel
+            bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
+            cargarPanel();
+          } catch (err) {
+            console.error('Fetch falló:', err);
+            document.getElementById('editar-msg').textContent = 'Error de red. Intenta de nuevo.';
+          }
+        });
 
     // Abrir modal eliminar
     window.abrirEliminar = (id, nombre) => {
