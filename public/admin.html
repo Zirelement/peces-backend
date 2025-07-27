@@ -18,6 +18,10 @@
     .btn-custom { transition: all 0.3s ease-in-out; border-radius: 8px; }
     .btn-custom:hover { transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
     .top-buttons { display: flex; justify-content: space-between; margin-bottom: 20px; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { font-weight: bold; display: block; margin-bottom: .25rem; }
+    .form-control { width: 100%; padding: .5rem; border: 1px solid #ccc; border-radius: .25rem; }
+    .text-error { color: #c00; margin-top: .5rem; }
   </style>
 </head>
 <body class="bg-light">
@@ -40,7 +44,7 @@
       </button>
     </div>
 
-    <!-- Modales -->
+    <!-- Modal Agregar Pez -->
     <div class="modal fade" id="modalAgregarPez" tabindex="-1">
       <div class="modal-dialog"><div class="modal-content">
         <form id="form-agregar">
@@ -49,13 +53,37 @@
             <button class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <input name="nombre_comun" class="form-control mb-2" placeholder="Nombre común" required>
-            <input name="nombre_cientifico" class="form-control mb-2" placeholder="Nombre científico" required>
-            <input name="familia" class="form-control mb-2" placeholder="Familia" required>
-            <input name="alimentacion" class="form-control mb-2" placeholder="Alimentación">
-            <input name="estado_conservacion" class="form-control mb-2" placeholder="Estado de conservación">
-            <input type="file" name="imagen" class="form-control mb-2" accept="image/*" required>
-            <p id="agregar-msg" class="text-danger"></p>
+            <div class="form-group">
+              <label for="add-nombre_comun">Nombre común</label>
+              <input id="add-nombre_comun" name="nombre_comun" type="text"
+                     placeholder="Ej. Boquichico" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="add-nombre_cientifico">Nombre científico</label>
+              <input id="add-nombre_cientifico" name="nombre_cientifico" type="text"
+                     placeholder="Ej. Prochilodus nigricans" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="add-familia">Familia</label>
+              <input id="add-familia" name="familia" type="text"
+                     placeholder="Ej. Prochilodontidae" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="add-alimentacion">Alimentación</label>
+              <input id="add-alimentacion" name="alimentacion" type="text"
+                     placeholder="Ej. Omnívora" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="add-estado_conservacion">Estado de conservación</label>
+              <input id="add-estado_conservacion" name="estado_conservacion" type="text"
+                     placeholder="Ej. Preocupación menor" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="add-imagen">Imagen</label>
+              <input id="add-imagen" name="imagen" type="file"
+                     class="form-control" accept="image/*" required>
+            </div>
+            <p id="agregar-msg" class="text-error"></p>
           </div>
           <div class="modal-footer">
             <button class="btn btn-success w-100" type="submit">Crear</button>
@@ -64,6 +92,7 @@
       </div></div>
     </div>
 
+    <!-- Modal Editar Pez -->
     <div class="modal fade" id="modalEditar" tabindex="-1">
       <div class="modal-dialog"><div class="modal-content">
         <form id="form-editar">
@@ -73,13 +102,37 @@
             <button class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <input name="nombre_comun" class="form-control mb-2" placeholder="Nombre común" required>
-            <input name="nombre_cientifico" class="form-control mb-2" placeholder="Nombre científico" required>
-            <input name="familia" class="form-control mb-2" placeholder="Familia" required>
-            <input name="alimentacion" class="form-control mb-2" placeholder="Alimentación">
-            <input name="estado_conservacion" class="form-control mb-2" placeholder="Estado de conservación">
-            <input type="file" name="imagen" class="form-control mb-2" accept="image/*">
-            <p id="editar-msg" class="text-danger"></p>
+            <div class="form-group">
+              <label for="nombre_comun">Nombre común</label>
+              <input id="nombre_comun" name="nombre_comun" type="text"
+                     placeholder="Ej. Boquichico" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="nombre_cientifico">Nombre científico</label>
+              <input id="nombre_cientifico" name="nombre_cientifico" type="text"
+                     placeholder="Ej. Prochilodus nigricans" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="familia">Familia</label>
+              <input id="familia" name="familia" type="text"
+                     placeholder="Ej. Prochilodontidae" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="alimentacion">Alimentación</label>
+              <input id="alimentacion" name="alimentacion" type="text"
+                     placeholder="Ej. Omnívora" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="estado_conservacion">Estado de conservación</label>
+              <input id="estado_conservacion" name="estado_conservacion" type="text"
+                     placeholder="Ej. Preocupación menor" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="imagen">Imagen</label>
+              <input id="imagen" name="imagen" type="file"
+                     class="form-control" accept="image/*">
+            </div>
+            <p id="editar-msg" class="text-error"></p>
           </div>
           <div class="modal-footer">
             <button class="btn btn-warning w-100" type="submit">Actualizar</button>
@@ -88,6 +141,7 @@
       </div></div>
     </div>
 
+    <!-- Modal Eliminar Pez -->
     <div class="modal fade" id="modalEliminar" tabindex="-1">
       <div class="modal-dialog"><div class="modal-content">
         <div class="modal-header">
@@ -113,24 +167,18 @@
     const baseURL = location.origin;
     const rol     = sessionStorage.getItem('rol') || 'invitado';
 
-    // Si no es admin ni analista, lo mandamos a galería
     if (!['admin','analista'].includes(rol)) {
       location.replace('peces.html');
     }
-
-    // Sólo admin ve “Agregar”
     if (rol !== 'admin') {
       document.getElementById('btn-agregar').style.display = 'none';
     }
-
-    // Cerrar sesión
     document.getElementById('btn-logout')
       .addEventListener('click', () => {
         sessionStorage.clear();
         location.replace('peces.html');
       });
 
-    // Resuelve URL de imagen almacenada
     function resolverImagen(url) {
       if (!url) return `${baseURL}/images/default.png`;
       return url.startsWith('http') ? url
@@ -138,7 +186,6 @@
            : `${baseURL}/images/${url}`;
     }
 
-    // Renderiza tarjetas al DOM
     function renderEspecies(especies) {
       const cont = document.getElementById('admin-contenedor-peces');
       cont.innerHTML = '';
@@ -147,23 +194,19 @@
         cont.insertAdjacentHTML('beforeend', `
           <div class="col-md-4 mb-4">
             <div class="card shadow-sm h-100">
-              <img src="${imgUrl}"
-                   class="card-img-top"
-                   alt="${p.nombre_comun}">
+              <img src="${imgUrl}" class="card-img-top" alt="${p.nombre_comun}">
               <div class="card-body">
                 <h5>${p.nombre_comun}</h5>
                 <button class="btn btn-warning btn-custom me-2"
                         onclick="abrirEditar('${p._id}')">
                   <i class="bi bi-pencil"></i> Editar
                 </button>
-                ${
-                  rol === 'admin'
+                ${ rol==='admin'
                   ? `<button class="btn btn-danger btn-custom"
                               onclick="abrirEliminar('${p._id}','${p.nombre_comun}')">
                        <i class="bi bi-trash"></i> Eliminar
                      </button>`
-                  : ``
-                }
+                  : '' }
               </div>
             </div>
           </div>
@@ -171,7 +214,6 @@
       });
     }
 
-    // Trae datos y pinta
     async function cargarPanel() {
       try {
         const res = await fetch(`${baseURL}/especies`);
@@ -184,47 +226,60 @@
       }
     }
 
-    // Abrir modal editar
     window.abrirEditar = async id => {
       const res = await fetch(`${baseURL}/especies`);
       const peces = await res.json();
       const p = peces.find(x => x._id === id);
       const f = document.getElementById('form-editar');
-      f._id.value               = p._id;
-      f.nombre_comun.value      = p.nombre_comun;
-      f.nombre_cientifico.value = p.nombre_cientifico;
-      f.familia.value           = p.familia;
-      f.alimentacion.value      = p.alimentacion || '';
-      f.estado_conservacion.value = p.estado_conservacion || '';
+      f._id.value                  = p._id;
+      f.nombre_comun.value         = p.nombre_comun;
+      f.nombre_cientifico.value    = p.nombre_cientifico;
+      f.familia.value              = p.familia;
+      f.alimentacion.value         = p.alimentacion || '';
+      f.estado_conservacion.value  = p.estado_conservacion || '';
       new bootstrap.Modal(document.getElementById('modalEditar')).show();
     };
 
-    // Submit editar
     document.getElementById('form-editar')
       .addEventListener('submit', async e => {
         e.preventDefault();
-        const f = e.target, fd = new FormData(f);
+        const f = e.target;
+        const payload = {
+          nombre_comun:       f.nombre_comun.value,
+          nombre_cientifico:  f.nombre_cientifico.value,
+          familia:            f.familia.value,
+          alimentacion:       f.alimentacion.value,
+          estado_conservacion:f.estado_conservacion.value
+        };
         try {
           const res = await fetch(
             `${baseURL}/especies/${f._id.value}`,
-            { method: 'PUT', body: fd }
+            {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            }
           );
-          if (!res.ok) throw '';
+          const data = await res.json();
+          if (!res.ok) {
+            document.getElementById('editar-msg').textContent = data.message;
+            console.error('Error al actualizar:', data.code, data.message);
+            return;
+          }
           bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
           cargarPanel();
-        } catch {
-          document.getElementById('editar-msg').textContent = 'Error al actualizar';
+        } catch (err) {
+          console.error('Fetch falló:', err);
+          document.getElementById('editar-msg').textContent = 'Error de red. Intenta de nuevo.';
         }
       });
 
-    // Abrir modal eliminar
     window.abrirEliminar = (id, nombre) => {
-      document.getElementById('idEliminar').value     = id;
+      document.getElementById('idEliminar').value = id;
       document.getElementById('pezAEliminar').textContent = nombre;
       new bootstrap.Modal(document.getElementById('modalEliminar')).show();
     };
 
-    // Confirmar eliminar
     document.getElementById('confirmar-eliminar')
       .addEventListener('click', async () => {
         try {
@@ -237,7 +292,6 @@
         } catch {}
       });
 
-    // Agregar pez
     document.getElementById('form-agregar')
       .addEventListener('submit', async e => {
         e.preventDefault();
@@ -250,7 +304,7 @@
           if (!res.ok) throw '';
           bootstrap.Modal.getInstance(document.getElementById('modalAgregarPez')).hide();
           e.target.reset();
-          cargarPanel();            // <-- antes llamabas a cargarPeces()
+          cargarPanel();
         } catch {
           document.getElementById('agregar-msg').textContent = 'Error al agregar pez';
         }
@@ -260,6 +314,5 @@
   </script>
 </body>
 </html>
-
 
 
