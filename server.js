@@ -124,17 +124,23 @@ app.post('/especies', upload.single('imagen'), async (req,res)=>{
 });
 app.put('/especies/:id', upload.single('imagen'), async (req,res)=>{
   try {
-	const { nombre, ...otrosCampos } = req.body;
-	
-	    // Validación de negocio: el nombre no puede contener dígitos
-	    if (nombre && /\d/.test(nombre)) {
+	// Destructure ambos posibles campos de nombre
+	    const { nombre, nombre_comun, ...otrosCampos } = req.body;
+	    // Usa el que esté presente
+	    const valorNombre = nombre ?? nombre_comun;
+	    if (valorNombre && /\d/.test(valorNombre)) {
 	      return res.status(422).json({
 	        code: 'INVALID_NAME',
 	        message: 'El nombre no puede contener números.'
 	      });
 	    }
 	
-	    const update = { nombre, ...otrosCampos };
+		// Reconstruye el objeto de actualización según lo que venga
+		    const update = {
+		      ...(nombre   != null ? { nombre }   : {}),
+		      ...(nombre_comun != null ? { nombre_comun } : {}),
+		      ...otrosCampos
+		    };
     if (req.file) update.imagen_url = req.file.path;
     await Species.findByIdAndUpdate(req.params.id, update);
     res.json({ ok:true });
